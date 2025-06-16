@@ -383,7 +383,7 @@ void  Microshell::m_CorePrintError(const int iError)
         const char *pstrErrorDescription = bIsInvalidNumError  ? "invalid " :
                                            bIsTooManyArgsError ? "too many args of type " :
                                            bIsNumBigValueError ? "value too big for " : pstrErrorUnknown;
-        const char *pstrErrorDetail = (uSHELL_INVALID_VALUE != m_sCommand.eDataType) ? m_vstrTypeNames[m_sCommand.eDataType] : pstrErrorUnknown;
+        const char *pstrErrorDetail = (m_sCommand.eDataType < uSHELL_DATA_TYPE_LAST) ? m_vstrTypeNames[m_sCommand.eDataType] : pstrErrorUnknown;
 
         uSHELL_PRINTF(FRMT(uSHELL_ERROR_COLOR, "\r%s%s%s (arg:%d) | %s:%s\n"), pstrErrorCaption, pstrErrorDescription, pstrErrorDetail, (m_sCommand.iErrorInfo + 1), m_sCommand.pstrFctName, m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef);
     } else {

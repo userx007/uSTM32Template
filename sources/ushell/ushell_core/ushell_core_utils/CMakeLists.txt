@@ -15,7 +15,6 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ushell_core_terminal
     ushell_core_config
     ushell_settings
 )

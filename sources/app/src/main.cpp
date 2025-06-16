@@ -4,6 +4,7 @@
 #include "ushell_core.h"
 
 
+#if 0
 static void delay(uint32_t value)
 {
   for (uint32_t i = 0; i < value; i++)
@@ -11,11 +12,12 @@ static void delay(uint32_t value)
     __asm__("nop"); /* Do nothing. */
   }
 }
+#endif
 
 int main(void)
 {
-
-    Microshell::getShellPtr(pluginEntry(), "root")->Run();
+    const char *pstrRootName = "root";
+    Microshell::getShellPtr(pluginEntry(), pstrRootName)->Run();
 #if 0
     /*
      * This is just a demo program so you can test if your setup works.

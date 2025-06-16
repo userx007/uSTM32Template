@@ -41,6 +41,8 @@ static int uShellExecuteCommand( const command_s *psCmd );
     #endif
 #elif (defined(__ghs) || defined(__ghs__))   /* Green Hills Software compiler */
     #define  uSHELL_COMMAND(a,b,c)          { a, b##_type },
+#elif defined(__GNUC__) && defined(__ARM_ARCH)
+    #define  uSHELL_COMMAND(a,b,c)          { (v_fctptr_t)a, b##_type },
 #else
     #error "Build variant not defined, please define it..."
 #endif

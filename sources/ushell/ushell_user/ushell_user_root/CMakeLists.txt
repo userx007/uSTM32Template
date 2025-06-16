@@ -19,8 +19,5 @@ target_link_libraries(${PROJECT_NAME}
     ushell_core
     ushell_core_config
     ushell_core_utils
-    ushell_core_terminal
-    ushell_user_logger
-    ushell_user_plugin_loader
 )
 

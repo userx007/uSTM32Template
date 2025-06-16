@@ -15,10 +15,7 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC
         ${LIBOPENCM3_LIB}
         ushell_core
-        ushell_core_terminal
         ushell_core_utils
         ushell_user_root
-        ushell_user_logger
-        user_lib
 )
 
