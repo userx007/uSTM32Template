@@ -38,7 +38,7 @@ do_build() {
 
     cmake -DCMAKE_TOOLCHAIN_FILE=stm32-arm-none-eabi.cmake ..
 
-    make install
+    make
     echo "Build finished !"
     cd -
 }

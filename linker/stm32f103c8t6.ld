@@ -27,4 +27,4 @@ MEMORY
 }
 
 /* Include the common ld script. */
-INCLUDE libopencm3/lib/cortex-m-generic.ld
+INCLUDE ../sources/libopencm3/lib/cortex-m-generic.ld
