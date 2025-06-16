@@ -137,38 +137,52 @@ bool asc2float(const char *s, numfp_t *pFloatTypeVar)
 /*----------------------------------------------------------------------------*/
 int dump(BIGNUM_T address, num32_t length, bool show_address)
 {
-#define uSHELL_DUMP_ELEM_PER_LINE (16U)
+    #define DUMP_ELEM_PER_LINE 16U
 
-#if defined (__GNUC__) && defined(__AVR__)
-    char *p = (char*)((int)address);
-#else
-    char *p = (char*)address;
-#endif
+    if (!address || length == 0) return -1;
 
-    if(!p) return -1;
+    char *p = (char*)
+    #if defined(__GNUC__) && defined(__AVR__)
+        ((int)address);
+    #else
+        address;
+    #endif
 
-    int nr_lines = length / uSHELL_DUMP_ELEM_PER_LINE;
-    int last_line_len = length % uSHELL_DUMP_ELEM_PER_LINE;
-    if(last_line_len) nr_lines++;
+    unsigned int full_lines = length / DUMP_ELEM_PER_LINE;
+    unsigned int remaining = length % DUMP_ELEM_PER_LINE;
 
-    for(int i = 0; i < nr_lines; ++i) {
-        int index = i * uSHELL_DUMP_ELEM_PER_LINE;
-        if(show_address) uSHELL_PRINTF("%p | ", (p + index));
+    for (unsigned int i = 0; i < full_lines + (remaining ? 1 : 0); ++i) {
+        unsigned int offset = i * DUMP_ELEM_PER_LINE;
+        unsigned int line_len = (i == full_lines) ? remaining : DUMP_ELEM_PER_LINE;
 
-        for(int k = 0; k < 2; ++k) {
-            for(int j = 0; j < uSHELL_DUMP_ELEM_PER_LINE; ++j) {
-                unsigned char crt_byte = *(p + index + j);
-                if((i == nr_lines - 1) && last_line_len && j >= last_line_len)
-                    uSHELL_PRINTF((k == 0) ? "   " : " ");
-                else
-                    uSHELL_PRINTF("%c", uSHELL_ISPRINT(crt_byte) ? crt_byte : '.');
+        if (show_address){
+            uSHELL_PRINTF("%p | ", p + offset);
+        }
+
+        // Print ASCII characters
+        for (unsigned int j = 0; j < DUMP_ELEM_PER_LINE; ++j) {
+            if (j < line_len) {
+                unsigned char c = *(p + offset + j);
+                uSHELL_PRINTF("%c", uSHELL_ISPRINT(c) ? c : '.');
+            } else {
+                uSHELL_PRINTF(" ");
             }
-            uSHELL_PRINTF(" | ");
+        }
+        uSHELL_PRINTF(" | ");
+
+        // Print hex values
+        for (unsigned int k = 0; k < DUMP_ELEM_PER_LINE; ++k) {
+            if (k < line_len) {
+                uSHELL_PRINTF("%02X ", (unsigned char)*(p + offset + k));
+            } else {
+                uSHELL_PRINTF("   ");
+            }
         }
         uSHELL_PRINTF("\n");
     }
 
-#undef uSHELL_DUMP_ELEM_PER_LINE
+    #undef DUMP_ELEM_PER_LINE
     return length;
 }
+
 
