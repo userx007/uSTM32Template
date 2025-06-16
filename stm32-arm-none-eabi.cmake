@@ -1,3 +1,4 @@
+
 ###########################################################################################################
 # Toolchain file for building STM32 firmware using arm-none-eabi-gcc on Linux
 #
@@ -23,11 +24,23 @@ set(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
 
 # Flags
 set(CPU_FLAGS "-mcpu=cortex-m3 -mthumb")
-set(CMAKE_C_FLAGS_INIT "${CPU_FLAGS} -Wall -O2")
-set(CMAKE_CXX_FLAGS_INIT "${CPU_FLAGS} -Wall -O2")
-set(CMAKE_ASM_FLAGS_INIT "${CPU_FLAGS}")
+set(CMAKE_C_FLAGS_INIT "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1")
+set(CMAKE_CXX_FLAGS_INIT "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1 -fno-exceptions -fno-rtti")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-nostartfiles -Wl,--script=${CMAKE_SOURCE_DIR}/linker/stm32f103c8t6.ld,--gc-sections,-Map=${CMAKE_SOURCE_DIR}/build/${PROJECT_NAME}.map --specs=nano.specs --specs=nosys.specs")
 
 # Don't look for standard system libraries
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+# libopencm3 library
+set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3)
+set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a)
+
+# Include directories
+include_directories(
+    ${LIBOPENCM3_DIR}/include
+)
+
+
+
