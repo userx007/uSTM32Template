@@ -1,6 +1,9 @@
 #include "libopencm3/stm32/rcc.h"
 #include "libopencm3/stm32/gpio.h"
 
+#include "ushell_core.h"
+
+
 static void delay(uint32_t value)
 {
   for (uint32_t i = 0; i < value; i++)
@@ -9,7 +12,11 @@ static void delay(uint32_t value)
   }
 }
 
-int main(void) {
+int main(void)
+{
+
+    Microshell::getShellPtr(pluginEntry(), "root")->Run();
+#if 0
     /*
      * This is just a demo program so you can test if your setup works.
      * You may remove this and replace it with your actual program
@@ -23,4 +30,6 @@ int main(void) {
         gpio_clear(GPIOC, GPIO13);
         delay(100000);
     }
+#endif
+
 }
