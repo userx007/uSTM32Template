@@ -37,9 +37,8 @@ do_build() {
     echo "Building in folder: build .."
 
     cmake -DCMAKE_TOOLCHAIN_FILE=stm32-arm-none-eabi.cmake ..
-    cmake --build build
 
-    #make install
+    make install
     echo "Build finished !"
     cd -
 }

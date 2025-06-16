@@ -33,6 +33,10 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
+# Don't try to compile a test program
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+
 # libopencm3 library
 set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3)
 set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a)
@@ -40,6 +44,7 @@ set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a)
 # Include directories
 include_directories(
     ${LIBOPENCM3_DIR}/include
+    ${LIBOPENCM3_DIR}/lib
 )
 
 
