@@ -1,1 +1,4 @@
-add_subdirectory(user)
+add_subdirectory(libs)
+add_subdirectory(app)
+
+
