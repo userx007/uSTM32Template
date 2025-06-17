@@ -3,7 +3,7 @@
 
 #include <stdarg.h>
 
-void usart_setup(void);
+void uart_setup(void);
 void uart_putchar(char c);
 int  uart_getchar(void);
 void uart_printf(const char *fmt, ...);

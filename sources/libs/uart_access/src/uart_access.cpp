@@ -22,7 +22,7 @@ static void print_hex_to_buf(char *buf, int *pos, int maxlen, unsigned int value
 
 
 /*--------------------------------------------------*/
-void usart_setup(void)
+void uart_setup(void)
 {
     rcc_periph_clock_enable(RCC_USART1);
     rcc_periph_clock_enable(RCC_GPIOA);
