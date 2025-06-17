@@ -222,5 +222,4 @@ private:
     static uShellInst_s *m_pInst;
 };
 
-#define uSHELL_INVALID_VALUE (-1)
 
