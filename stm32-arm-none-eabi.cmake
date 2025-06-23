@@ -26,6 +26,8 @@ set(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
 set(CPU_FLAGS "-mcpu=cortex-m3 -mthumb")
 set(CMAKE_C_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1")
 set(CMAKE_CXX_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1 -fno-exceptions -fno-rtti")
+
+# Define the linker script
 set(CMAKE_EXE_LINKER_FLAGS "-nostartfiles -Wl,--script=${CMAKE_SOURCE_DIR}/linker/stm32f103c8t6.ld,--gc-sections,-Map=${CMAKE_SOURCE_DIR}/build/${PROJECT_NAME}.map --specs=nano.specs --specs=nosys.specs")
 
 # Don't look for standard system libraries
