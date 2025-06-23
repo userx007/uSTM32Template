@@ -1,4 +1,5 @@
-#pragma once
+#ifndef USHELL_CORE_DATATYPES_H
+#define USHELL_CORE_DATATYPES_H
 
 /* disable warning like: padding added after data member */
 #ifdef _MSC_VER
@@ -166,3 +167,5 @@ typedef struct {
 
 
 uShellInst_s *pluginEntry(void);
+
+#endif /* USHELL_CORE_DATATYPES_H */

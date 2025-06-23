@@ -20,7 +20,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
 
-#pragma once
+#ifndef USHELL_CORE_H
+#define USHELL_CORE_H
 
 #include "ushell_core_datatypes.h"
 
@@ -222,4 +223,4 @@ private:
     static uShellInst_s *m_pInst;
 };
 
-
+#endif /* USHELL_CORE_H */
