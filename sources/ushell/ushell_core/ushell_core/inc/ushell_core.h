@@ -32,8 +32,11 @@ class Microshell
 
 public:
 
-    static Microshell *getShellPtr(uShellInst_s *psShellInst, const char *pstrPromptExt);
+    static Microshell *getShellPtr( uShellInst_s *psShellInst, const char *pstrPromptExt );
     void Run( void );
+#if (1 == uSHELL_SUPPORTS_COMMAND_AS_PARAMETER)
+    bool Execute( const char *pstrCommand );
+#endif /* (1 == uSHELL_SUPPORTS_COMMAND_AS_PARAMETER) */
 
 private:
 
@@ -65,6 +68,7 @@ private:
     static void m_CoreShowTypes( void );
     static void m_CorePutChars( const char *pstrArray, int iNrChars, const bool bNewLine );
 #endif /* (1 == uSHELL_IMPLEMENTS_COMMAND_HELP)*/
+    static void m_CoreShowCmd( int iFctIndex );
     static void m_CoreShowCmdsList( void );
 
 #if defined(uSHELL_IMPLEMENTS_STRINGS)
@@ -124,11 +128,7 @@ private:
     static void m_CircBufFreeMem( const bool bFull );
 
     /* history functions */
-#if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
     static void m_HistoryInit( const char *pstrFileName );
-#else
-    static void m_HistoryInit( void );
-#endif /*(1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)*/
     static void m_HistoryDeInit( void );
     static void m_HistoryWrite( void );
     static void m_HistoryReset( void );
@@ -137,11 +137,18 @@ private:
     static void m_HistoryRead( const dir_e eDir );
     static char* m_HistoryGetEntry( int iIndex );
     static void m_HistoryEnable( const bool bEnable );
-#if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
+#endif /* (1 == uSHELL_IMPLEMENTS_HISTORY) */
+
+#if ((1 == uSHELL_IMPLEMENTS_HISTORY) && (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY))
     static void m_HistoryReload( void );
     static void m_HistoryLoadFromFile( void );
+#endif /*((1 == uSHELL_IMPLEMENTS_HISTORY) && (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY))*/
+
+#if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
+    static void m_HistoryInitFile( const char *pstrFileName );
+    static void m_HistoryWriteFile( void );
+    static void m_HistoryCloseFile( void );
 #endif /*(1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)*/
-#endif /* (1 == uSHELL_IMPLEMENTS_HISTORY) */
 
     /* autocomplete functions */
 #if (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE)
