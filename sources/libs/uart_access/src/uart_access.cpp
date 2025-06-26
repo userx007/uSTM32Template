@@ -62,7 +62,7 @@ void uart_putchar(char c)
 
 
 /*--------------------------------------------------*/
-void uart_printf(const char *fmt, ...)
+int uart_printf(const char *fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
@@ -107,6 +107,8 @@ void uart_printf(const char *fmt, ...)
         fmt++;
     }
     va_end(args);
+
+    return 0;
 }
 
 

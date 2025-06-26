@@ -118,7 +118,7 @@ static uShellInst_s sShellInstance = {
     .piAutocompleteIndexArray                               = g_viAutocompleteIndexArray,
 #endif /* (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE) */
 #if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
-    .pfileHistory                                           = NULL,
+    .pfileHistory                                           = nullptr,
 #endif /*(1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)*/
 #if (1 == uSHELL_IMPLEMENTS_SHELL_EXIT)
     .bKeepRuning                                            = true,
@@ -136,9 +136,13 @@ static int uShellExecuteCommand( const command_s *psCmd )
 {
     /* void:v, (byte)u8:b:vb, (word)u16:w:vw, (int)u32:i:vi, (long)u64:l:vl, float:f:vf, string:s:vs, bool:o:vo */
     switch(g_vsFuncDefExArray[psCmd->iFctIndex].eParamType) {
-        case v_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.v_fct();
-        case s_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.s_fct(psCmd->vs[0]);
-        case lio_type        :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.lio_fct(psCmd->vl[0], psCmd->vi[0], psCmd->vo[0]);
+        case v_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.v_fct          ();
+        case i_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.i_fct          (psCmd->vi[0]);
+        case s_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.s_fct          (psCmd->vs[0]);
+        case ii_type         :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.ii_fct         (psCmd->vi[0], psCmd->vi[1]);
+        case ss_type         :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.ss_fct         (psCmd->vs[0], psCmd->vs[1]);
+        case is_type         :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.is_fct         (psCmd->vi[0], psCmd->vs[0]);
+        case lio_type        :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.lio_fct        (psCmd->vl[0], psCmd->vi[0], psCmd->vo[0]);
         default              :return uSHELL_ERR_PARAMS_PATTERN_NOT_IMPLEM;
     }
 } /* priv_uShellCoreExecuteCommand() */

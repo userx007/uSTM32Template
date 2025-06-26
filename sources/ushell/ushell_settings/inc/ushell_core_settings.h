@@ -10,7 +10,7 @@
 #define uSHELL_SUPPORTS_COMMAND_AS_PARAMETER     1  /* enable Execute(command) interface */
 /* major features */
 #define uSHELL_IMPLEMENTS_HISTORY                1
-#define uSHELL_IMPLEMENTS_SAVE_HISTORY           1
+#define uSHELL_IMPLEMENTS_SAVE_HISTORY           0
 #define uSHELL_IMPLEMENTS_AUTOCOMPLETE           1
 #define uSHELL_IMPLEMENTS_EDITMODE               1
 #define uSHELL_IMPLEMENTS_SMART_PROMPT           1

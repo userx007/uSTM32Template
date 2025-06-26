@@ -25,7 +25,7 @@ Note:
 /*---------------------------------------------------------------*/
 int vtest(void)
 {
-    uSHELL_PRINTF("--> vtest()" );
+    uSHELL_PRINTF("--> vtest()\n");
 
     return 0;
 }
@@ -35,7 +35,7 @@ int vhexlify(void)
 {
     int iRetVal = SHELLFCT_RETVAL_ERR;
 
-    uSHELL_PRINTF("--> vhexlify()" );
+    uSHELL_PRINTF("--> vhexlify()\n");
 
     #define TEST_LEN 16U
     const uint8_t pu8InBuf[TEST_LEN] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
@@ -43,15 +43,15 @@ int vhexlify(void)
 
     if (nullptr != pstrOutBuf) {
         for (unsigned int i = 0; i < TEST_LEN; ++i) {
-            uSHELL_PRINTF("%d : %d (0x%02X)", i, pu8InBuf[i], pu8InBuf[i]);
+            uSHELL_PRINTF("%d : %d (0x%02X)\n", i, pu8InBuf[i], pu8InBuf[i]);
         }
 
         hexlify(pu8InBuf, TEST_LEN, pstrOutBuf);
-        uSHELL_PRINTF("result: [%s]", pstrOutBuf);
+        uSHELL_PRINTF("result: [%s]\n", pstrOutBuf);
         free(pstrOutBuf);
         iRetVal = 0;
     } else {
-        uSHELL_PRINTF("malloc failed");
+        uSHELL_PRINTF("malloc failed\n");
     }
 
     return iRetVal;
@@ -60,8 +60,8 @@ int vhexlify(void)
 /*---------------------------------------------------------------*/
 int itest(uint32_t i)
 {
-    uSHELL_PRINTF("--> itest()" );
-    uSHELL_PRINTF("i = %u", i );
+    uSHELL_PRINTF("--> itest()\n");
+    uSHELL_PRINTF("i = %u\n", i );
 
     return 0;
 }
@@ -69,8 +69,8 @@ int itest(uint32_t i)
 /*---------------------------------------------------------------*/
 int stest(char *s)
 {
-    uSHELL_PRINTF("--> stest()" );
-    uSHELL_PRINTF("s = %s", s );
+    uSHELL_PRINTF("--> stest()\n");
+    uSHELL_PRINTF("s = %s\n", s );
 
     return 0;
 }
@@ -80,7 +80,7 @@ int sunhexlify(char *s)
 {
     int iRetVal = SHELLFCT_RETVAL_ERR;
 
-    uSHELL_PRINTF("--> sunhexlify()" );
+    uSHELL_PRINTF("--> sunhexlify()\n");
 
     size_t szLen = strlen(s);
     if (0 != szLen) {
@@ -91,18 +91,18 @@ int sunhexlify(char *s)
 
             if (unhexlify(s, pu8Buf, &szOutLen)) {
                 for (unsigned int i = 0; i < szOutLen; ++i) {
-                    uSHELL_PRINTF("%d : %d (0x%02X)", i, pu8Buf[i], pu8Buf[i]);
+                    uSHELL_PRINTF("%d : %d (0x%02X)\n", i, pu8Buf[i], pu8Buf[i]);
                 }
                 iRetVal = 0;
             } else {
-                uSHELL_PRINTF("unhexlify failed (len || content)");
+                uSHELL_PRINTF("unhexlify failed (len || content)\n");
             }
             free(pu8Buf);
         } else {
-            uSHELL_PRINTF("malloc failed");
+            uSHELL_PRINTF("malloc failed\n");
         }
     } else {
-        uSHELL_PRINTF("empty string");
+        uSHELL_PRINTF("empty string\n");
     }
 
     return iRetVal;
@@ -111,9 +111,9 @@ int sunhexlify(char *s)
 /*---------------------------------------------------------------*/
 int iitest(uint32_t i1, uint32_t i2)
 {
-    uSHELL_PRINTF("--> iitest()" );
-    uSHELL_PRINTF("i1 = %d", i1 );
-    uSHELL_PRINTF("i2 = %d", i2 );
+    uSHELL_PRINTF("--> iitest()\n");
+    uSHELL_PRINTF("i1 = %d\n", i1 );
+    uSHELL_PRINTF("i2 = %d\n", i2 );
 
     return 0;
 }
@@ -121,9 +121,9 @@ int iitest(uint32_t i1, uint32_t i2)
 /*---------------------------------------------------------------*/
 int istest(uint32_t i, char *s)
 {
-    uSHELL_PRINTF("--> istest()" );
-    uSHELL_PRINTF("i = %d", i );
-    uSHELL_PRINTF("s = %s", s );
+    uSHELL_PRINTF("--> istest()\n");
+    uSHELL_PRINTF("i = %d\n", i );
+    uSHELL_PRINTF("s = %s\n", s );
 
     return 0;
 }
@@ -131,9 +131,9 @@ int istest(uint32_t i, char *s)
 /*---------------------------------------------------------------*/
 int sstest(char *s1, char *s2)
 {
-    uSHELL_PRINTF("--> sstest()" );
-    uSHELL_PRINTF("s1 = %s", s1 );
-    uSHELL_PRINTF("s2 = %s", s2 );
+    uSHELL_PRINTF("--> sstest()\n");
+    uSHELL_PRINTF("s1 = %s\n", s1 );
+    uSHELL_PRINTF("s2 = %s\n", s2 );
 
     return 0;
 }
@@ -141,10 +141,10 @@ int sstest(char *s1, char *s2)
 /*---------------------------------------------------------------*/
 int liotest(uint64_t l, uint32_t i, bool o)
 {
-    uSHELL_PRINTF("--> liotest()" );
-    uSHELL_PRINTF("l = %ld", l );
-    uSHELL_PRINTF("i = %d", i );
-    uSHELL_PRINTF("o = %d", o );
+    uSHELL_PRINTF("--> liotest()\n");
+    uSHELL_PRINTF("l = %ld\n", l );
+    uSHELL_PRINTF("i = %d\n", i );
+    uSHELL_PRINTF("o = %d\n", o );
 
     return 0;
 }
@@ -159,7 +159,7 @@ int liotest(uint64_t l, uint32_t i, bool o)
 
 void uShellUserHandleShortcut_Dot( const char *pstrArgs )
 {
-    uSHELL_PRINTF("[.] registered but not implemented | args[%s] ", pstrArgs);
+    uSHELL_PRINTF("[.] registered but not implemented | args[%s]\n", pstrArgs);
 
 } /* uShellUserHandleShortcut_Dot() */
 
@@ -167,7 +167,7 @@ void uShellUserHandleShortcut_Dot( const char *pstrArgs )
 /******************************************************************************/
 void uShellUserHandleShortcut_Slash( const char *pstrArgs )
 {
-    uSHELL_PRINTF("[/] registered but not implemented | args[%s] ", pstrArgs);
+    uSHELL_PRINTF("[/] registered but not implemented | args[%s]\n", pstrArgs);
 
 } /* uShellUserHandleShortcut_Slash() */
 
