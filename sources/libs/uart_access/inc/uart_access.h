@@ -6,12 +6,10 @@ extern "C" {
 #endif
 
 #include <stdarg.h>
+#include "ushell_core_printout.h"
 
 void uart_setup(void);
-int  uart_getchar(void);
-void uart_putchar(char c);
-int  uart_printf (const char *format, ...);
-int  uart_snprintf(char *buf, int maxlen, const char *fmt, ...);
+
 
 #ifdef __cplusplus
 }
