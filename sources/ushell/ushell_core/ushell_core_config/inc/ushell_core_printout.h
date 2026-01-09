@@ -52,7 +52,9 @@ extern "C" {
     #undef  uSHELL_GETCH
     #undef  uSHELL_PUTCH
     #define uSHELL_PRINTF   uart_printf
-    #define uSHELL_SNPRINTF snprintf
+    #ifndef uSHELL_SNPRINTF
+        #define uSHELL_SNPRINTF snprintf
+    #endif
     #define uSHELL_GETCH()  uart_getchar()
     #define uSHELL_PUTCH(x) uart_putchar(x)
 #endif /*defined (SERIAL_TERMINAL) */

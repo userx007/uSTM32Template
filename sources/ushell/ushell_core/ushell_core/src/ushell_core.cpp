@@ -30,6 +30,7 @@ THE SOFTWARE.
 #include <cstring>
 #include <cstdint>
 #include <cctype>
+#include <cstdio>
 
 /*==============================================================================
                             LOCAL DEFINES

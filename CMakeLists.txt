@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project (stm32app C CXX)
 
+add_compile_definitions(SERIAL_TERMINAL)
+
 add_subdirectory(sources)
 
 add_executable(${PROJECT_NAME}.elf)
@@ -13,6 +15,7 @@ target_link_libraries(${PROJECT_NAME}.elf
     uart_access
     user_main
 )
+
 
 
 
