@@ -71,19 +71,55 @@ int uart_printf(const char *fmt, ...)
             fmt++;
             char pad = ' ';
             int width = 0;
+            int left_align = 0;  // Flag for left alignment
+            
+            // Check for left alignment flag '-'
+            if (*fmt == '-') {
+                left_align = 1;
+                fmt++;
+            }
+            
+            // Check for zero padding
             if (*fmt == '0') {
                 pad = '0';
                 fmt++;
             }
+            
+            // Parse width
             while (*fmt >= '0' && *fmt <= '9') {
                 width = width * 10 + (*fmt - '0');
                 fmt++;
             }
+            
             switch (*fmt) {
                 case 's': {
                     const char *s = va_arg(args, const char *);
-                    while (*s) {
-                        uart_putchar(*s++);
+                    int len = 0;
+                    const char *temp = s;
+                    
+                    // Calculate string length
+                    while (*temp++) len++;
+                    
+                    // Left-aligned: print string first, then padding
+                    if (left_align) {
+                        temp = s;
+                        while (*temp) {
+                            uart_putchar(*temp++);
+                        }
+                        // Add padding on the right
+                        for (int i = len; i < width; i++) {
+                            uart_putchar(pad);
+                        }
+                    } 
+                    // Right-aligned: print padding first, then string
+                    else {
+                        // Add padding on the left
+                        for (int i = len; i < width; i++) {
+                            uart_putchar(pad);
+                        }
+                        while (*s) {
+                            uart_putchar(*s++);
+                        }
                     }
                     break;
                 }
@@ -107,10 +143,8 @@ int uart_printf(const char *fmt, ...)
         fmt++;
     }
     va_end(args);
-
     return 0;
 }
-
 
 
 /*--------------------------------------------------*/

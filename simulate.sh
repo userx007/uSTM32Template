@@ -1,10 +1,8 @@
 #!/bin/bash
 
-cp stm32.resc build
+BUILD_DIR=$(pwd)/build
+cp stm32.resc ${BUILD_DIR}
 
-# Get current directory
-CRT_DIR=$(pwd)
-BUILD_DIR=${CRT_DIR}/build
 cd ${BUILD_DIR}
 
 # Run renode with absolute path
