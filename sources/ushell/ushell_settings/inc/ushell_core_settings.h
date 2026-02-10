@@ -49,7 +49,9 @@
 /* implementation specific */
 #define uSHELL_MAX_INPUT_BUF_LEN                 (128U)
 #define uSHELL_PROMPT_MAX_LEN                    (20U)
-#define uSHELL_HISTORY_DEPTH                     (100U)
+#define uSHELL_HISTORY_BUFFER_SIZE               (256) // if set to 0 then the pHistory is disabled
+#define uSHELL_HISTORY_FILEPATH_LENGTH           (32U)
+
 #if (1 == uSHELL_SUPPORTS_COLORS)
 #define uSHELL_PROMPT_COLOR                      "\033[96m"     // Bright Cyan
 #define uSHELL_INFO_HEADER_COLOR                 "\033[94m"     // Bright Blue
@@ -76,8 +78,8 @@
 #define uSHELL_RESET_COLOR                       ""
 #endif /* (1 == uSHELL_SUPPORTS_COLORS) */
 
-/* disable history if depth is 0 */
-#if (0 == uSHELL_HISTORY_DEPTH)
+/* disable history if no buffer is reserved 0 */
+#if (0 == uSHELL_HISTORY_BUFFER_SIZE)
     #undef  uSHELL_IMPLEMENTS_HISTORY
     #define uSHELL_IMPLEMENTS_HISTORY            0
 #endif /*(0 == uSHELL_HISTORY_DEPTH)*/

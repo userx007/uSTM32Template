@@ -82,7 +82,4 @@
     #endif /*uSHELL_KEY_ENTER*/
 #endif /* MY_TERMINAL */
 
-
-
-
 #endif /* USHELL_CORE_KEYS_H */
