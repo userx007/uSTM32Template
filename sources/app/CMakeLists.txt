@@ -4,12 +4,11 @@ project(user_main)
 
 add_library(${PROJECT_NAME}
     OBJECT
-        src/main.cpp
+        src/main.c
 )
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        ${LIBOPENCM3_LIB}
         uart_access
         ushell_core
         ushell_core_utils

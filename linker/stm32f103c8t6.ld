@@ -16,15 +16,17 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this library.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
- * Linker script for STM32F411CEU6
- * 512KB Flash, 128KB RAM
+
+/* 
+ * Linker script for STM32F103x8
+ * 64k flash, 20k RAM
  */
 
+/* Define memory regions. */
 MEMORY
 {
-    rom (rx)  : ORIGIN = 0x08000000, LENGTH = 512K
-    ram (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+	rom (rx)  : ORIGIN = 0x08000000, LENGTH = 64K
+	ram (rwx) : ORIGIN = 0x20000000, LENGTH = 20K
 }
 
 /* Include the common ld script. */
