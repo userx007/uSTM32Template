@@ -30,4 +30,5 @@
 *.exe
 *.out
 *.app
-build/
+build_stm32f411/
+build_stm32f103/

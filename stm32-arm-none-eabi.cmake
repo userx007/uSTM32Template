@@ -32,12 +32,12 @@ set(CMAKE_LINKER ${TOOLCHAIN_PREFIX}ld)
 # Don't run the linker on compiler check
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
-# Common flags (these will be extended by root CMakeLists.txt based on target)
-set(COMMON_FLAGS 
-    "-fno-common"
-    "-fmessage-length=0"
-    "-ffunction-sections"
-    "-fdata-sections"
+# Common flags (correct format)
+add_compile_options(
+    -fno-common
+    -fmessage-length=0
+    -ffunction-sections
+    -fdata-sections
 )
 
 # Debug/Release flags
@@ -50,11 +50,6 @@ set(CMAKE_C_FLAGS_RELEASE "-O2 -g0" CACHE INTERNAL "c compiler flags release")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0" CACHE INTERNAL "cxx compiler flags release")
 set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "asm compiler flags release")
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "" CACHE INTERNAL "linker flags release")
-
-# Apply common flags
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS}")
-set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${COMMON_FLAGS}")
 
 # Search paths
 set(CMAKE_FIND_ROOT_PATH ${BINUTILS_PATH})
