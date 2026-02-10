@@ -23,14 +23,35 @@ static void print_hex_to_buf(char *buf, int *pos, int maxlen, unsigned int value
 /*--------------------------------------------------*/
 void uart_setup(void)
 {
+    /* Enable clocks for USART1 and GPIOA */
     rcc_periph_clock_enable(RCC_USART1);
     rcc_periph_clock_enable(RCC_GPIOA);
 
+#if defined(STM32F1)
     gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
                   GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
     gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
                   GPIO_CNF_INPUT_FLOAT, GPIO_USART1_RX);
+#endif /*defined(STM32F1)*/
 
+#if defined(STM32F4)
+/*
+    STM32F411 USART1 Configuration:
+    USART1 TX: PA9 (Alternate Function 7)
+    USART1 RX: PA10 (Alternate Function 7)
+*/
+    
+    /* Configure PA9 as USART1_TX - Alternate Function */
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9);
+    gpio_set_af(GPIOA, GPIO_AF7, GPIO9);  /* AF7 is USART1 for STM32F411 */
+    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO9);
+    
+    /* Configure PA10 as USART1_RX - Alternate Function */
+    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10);
+    gpio_set_af(GPIOA, GPIO_AF7, GPIO10);  /* AF7 is USART1 for STM32F411 */
+#endif /*defined(STM32F4)*/
+
+    /* Setup USART1 parameters */
     usart_set_baudrate(USART1, 115200);
     usart_set_databits(USART1, 8);
     usart_set_stopbits(USART1, USART_STOPBITS_1);
@@ -38,6 +59,7 @@ void uart_setup(void)
     usart_set_parity(USART1, USART_PARITY_NONE);
     usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
 
+    /* Enable USART1 */
     usart_enable(USART1);
 }
 
