@@ -1,5 +1,0 @@
-mach create
-machine LoadPlatformDescription @platforms/cpus/stm32f103.repl
-sysbus LoadELF @stm32app.elf
-showAnalyzer sysbus.usart1
-start

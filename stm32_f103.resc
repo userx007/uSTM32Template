@@ -1,0 +1,28 @@
+##############################################################
+# stm32f103 - Renode Script
+##############################################################
+
+# Create machine
+mach create "stm32f103"
+
+# Load stm32f4 platform description
+machine LoadPlatformDescription @platforms/cpus/stm32f103.repl
+
+# Load firmware
+sysbus LoadELF @stm32app.elf
+
+# Load Python helper functions
+#include @cpu_status.py
+
+# UART configuration
+showAnalyzer sysbus.usart1
+logLevel 3 sysbus.usart1
+
+# Start GDB server
+machine StartGdbServer 3333
+
+# Start emulation
+start
+
+echo ""
+echo "To check CPU status: python \"cpu_status('')\""
