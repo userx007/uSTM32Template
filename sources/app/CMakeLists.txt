@@ -4,7 +4,8 @@ project(user_main)
 
 add_library(${PROJECT_NAME}
     OBJECT
-        src/main.c
+        src/main_freertos_shell.cpp
+#        src/main_bare_metal_shell.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -13,5 +14,6 @@ target_link_libraries(${PROJECT_NAME}
         ushell_core
         ushell_core_utils
         ushell_user_root
+        freertos
 )
 

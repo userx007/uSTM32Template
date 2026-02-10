@@ -1,7 +1,13 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
+#include <libopencm3/cm3/nvic.h> 
 #include <FreeRTOS.h>
 #include <task.h>
+
+#include "ushell_core.h"
+#include "ushell_core_printout.h"
+#include "uart_access.h"
+
 
 static void setup_clock(void) {
     /* Setup 100MHz from 8MHz HSE crystal */
@@ -26,11 +32,20 @@ static void setup_gpio(void) {
 
 void vTaskBlink(void *pvParameters) {
     (void)pvParameters;
+    static int i = 0;
     
     while (1) {
         gpio_toggle(GPIOC, GPIO13);
-        vTaskDelay(pdMS_TO_TICKS(500));
+        uSHELL_PRINTF(i == 0 ? "OFF\n" : "ON\n");
+        i = 1 - i;
+        vTaskDelay(pdMS_TO_TICKS(50));
     }
+}
+
+void vTaskShell(void *pvParameters) {
+    (void)pvParameters;
+    
+    Microshell::getShellPtr(pluginEntry(), "root")->Run();
 }
 
 void vApplicationMallocFailedHook(void) {
@@ -48,8 +63,14 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 int main(void) {
     setup_clock();
     setup_gpio();
-    
-    xTaskCreate(vTaskBlink, "Blink", 128, NULL, 1, NULL);
+    uart_setup();
+
+    // Ensure FreeRTOS can manage interrupts properly
+    //NVIC_SetPriorityGrouping(NVIC_PRIGROUP_GROUP4_NOSUB); // 4 bits for pre-emption priority
+
+    xTaskCreate(vTaskBlink, "Blink", 128, NULL, 2, NULL);
+    xTaskCreate(vTaskShell, "Shell", 1024, NULL, 1, NULL);
+
     
     vTaskStartScheduler();
     

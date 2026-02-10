@@ -7,7 +7,6 @@
 
 int main(void)
 {
-    //rcc_periph_clock_enable(RCC_GPIOC);
     uart_setup();
     Microshell::getShellPtr(pluginEntry(), "root")->Run();
     return 0;

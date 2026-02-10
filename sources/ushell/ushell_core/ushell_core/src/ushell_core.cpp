@@ -1867,7 +1867,7 @@ void Microshell::m_AutocomplRead(const dir_e eDir) {
 #if (defined(__MINGW32__) || defined(_MSC_VER))
             strncpy_s(m_pstrInput, sizeof(m_pstrInput), m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput));
 #else
-            strncpy(m_pstrInput, m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput));
+            strncpy(m_pstrInput, m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput) - 1);
 #endif /*(defined(__MINGW32__) || defined(_MSC_VER))*/
             m_iInputPos = (int)strlen(m_pstrInput);
             m_AutocomplInsEndSpace();

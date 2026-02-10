@@ -15,16 +15,20 @@ if(STM32_TARGET STREQUAL "STM32F103")
     set(FREERTOS_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/freertos_config/stm32f103")
     add_compile_definitions(STM32F1)
     add_compile_definitions(STM32F103)
+    set(LIBOPENCM3_LIB_NAME "libopencm3_stm32f1.a")
     
 elseif(STM32_TARGET STREQUAL "STM32F411")
     set(FREERTOS_PORT "GCC/ARM_CM4F")
     set(FREERTOS_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/freertos_config/stm32f411")
     add_compile_definitions(STM32F4)
     add_compile_definitions(STM32F411)
+    set(LIBOPENCM3_LIB_NAME "libopencm3_stm32f4.a")
 endif()
+
 # Define libopencm3 paths
 set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3)
 set(LIBOPENCM3_BUILD_STAMP ${CMAKE_BINARY_DIR}/libopencm3.stamp)
+set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/${LIBOPENCM3_LIB_NAME})
 
 # Create a custom command to build all libopencm3 libraries
 add_custom_command(
@@ -71,6 +75,3 @@ target_link_libraries(${PROJECT_NAME}.elf
     freertos
     ${LIBOPENCM3_LIB}
 )
-
-
-
