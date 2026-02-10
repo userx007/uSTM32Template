@@ -1,46 +1,64 @@
-
-###########################################################################################################
-# Toolchain file for building STM32 firmware using arm-none-eabi-gcc on Linux
-#
-# Usage:
-# cmake -DCMAKE_TOOLCHAIN_FILE=stm32-arm-none-eabi-toolchain.cmake -B build -S .
-# cmake --build build
-###########################################################################################################
-
-# Target system
+# stm32-arm-none-eabi.cmake
 set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR cortex-m3)
+set(CMAKE_SYSTEM_PROCESSOR ARM)
 
-# Toolchain prefix
-set(TOOLCHAIN_PREFIX arm-none-eabi)
+# Toolchain settings
+if(MINGW OR CYGWIN OR WIN32)
+    set(UTIL_SEARCH_CMD where)
+elseif(UNIX OR APPLE)
+    set(UTIL_SEARCH_CMD which)
+endif()
 
-# Compilers
-set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
-set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}-g++)
-set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
+set(TOOLCHAIN_PREFIX arm-none-eabi-)
 
-# Optional: GDB for debugging
-set(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
+execute_process(
+    COMMAND ${UTIL_SEARCH_CMD} ${TOOLCHAIN_PREFIX}gcc
+    OUTPUT_VARIABLE BINUTILS_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
 
-# Flags
-set(CPU_FLAGS "-mcpu=cortex-m3 -mthumb")
-set(CMAKE_C_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1")
-set(CMAKE_CXX_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -flto -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F1 -fno-exceptions -fno-rtti")
+get_filename_component(ARM_TOOLCHAIN_DIR ${BINUTILS_PATH} DIRECTORY)
 
-# Define the linker script
-set(CMAKE_EXE_LINKER_FLAGS "-nostartfiles -Wl,--script=${CMAKE_SOURCE_DIR}/linker/stm32f103c8t6.ld,--gc-sections,-Map=${CMAKE_SOURCE_DIR}/build/${PROJECT_NAME}.map --specs=nano.specs --specs=nosys.specs")
+# Compiler executables
+set(CMAKE_C_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+set(CMAKE_CXX_COMPILER ${TOOLCHAIN_PREFIX}g++)
+set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}gcc)
+set(CMAKE_AR ${TOOLCHAIN_PREFIX}ar)
+set(CMAKE_OBJCOPY ${TOOLCHAIN_PREFIX}objcopy)
+set(CMAKE_OBJDUMP ${TOOLCHAIN_PREFIX}objdump)
+set(CMAKE_SIZE ${TOOLCHAIN_PREFIX}size)
+set(CMAKE_LINKER ${TOOLCHAIN_PREFIX}ld)
 
-# Don't look for standard system libraries
+# Don't run the linker on compiler check
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+# Common flags (these will be extended by root CMakeLists.txt based on target)
+set(COMMON_FLAGS 
+    "-fno-common"
+    "-fmessage-length=0"
+    "-ffunction-sections"
+    "-fdata-sections"
+)
+
+# Debug/Release flags
+set(CMAKE_C_FLAGS_DEBUG "-Og -g3" CACHE INTERNAL "c compiler flags debug")
+set(CMAKE_CXX_FLAGS_DEBUG "-Og -g3" CACHE INTERNAL "cxx compiler flags debug")
+set(CMAKE_ASM_FLAGS_DEBUG "-g" CACHE INTERNAL "asm compiler flags debug")
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE INTERNAL "linker flags debug")
+
+set(CMAKE_C_FLAGS_RELEASE "-O2 -g0" CACHE INTERNAL "c compiler flags release")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -g0" CACHE INTERNAL "cxx compiler flags release")
+set(CMAKE_ASM_FLAGS_RELEASE "" CACHE INTERNAL "asm compiler flags release")
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "" CACHE INTERNAL "linker flags release")
+
+# Apply common flags
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS}")
+set(CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} ${COMMON_FLAGS}")
+
+# Search paths
+set(CMAKE_FIND_ROOT_PATH ${BINUTILS_PATH})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-
-# Don't try to compile a test program
-set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
-
-
-# libopencm3 library
-set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3 CACHE PATH "Path to libopencm3")
-set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a CACHE FILEPATH "libopencm3 static library")
-
-
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
