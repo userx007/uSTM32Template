@@ -117,9 +117,6 @@ static uShellInst_s sShellInstance = {
 #if (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE)
     .piAutocompleteIndexArray                               = g_viAutocompleteIndexArray,
 #endif /* (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE) */
-#if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
-    .pfileHistory                                           = nullptr,
-#endif /*(1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)*/
 #if (1 == uSHELL_IMPLEMENTS_SHELL_EXIT)
     .bKeepRuning                                            = true,
 #endif /*(1 == uSHELL_IMPLEMENTS_SHELL_EXIT)*/
@@ -131,9 +128,12 @@ static uShellInst_s sShellInstance = {
 };
 
 
-/******************************************************************************/
-static int uShellExecuteCommand( const command_s *psCmd )
-{
+/**
+ * @brief Execute a shell command based on parsed command structure
+ * @param psCmd Pointer to command structure with parsed parameters
+ * @return Error code from uSHELL_ERR_* enumeration
+ */
+static int uShellExecuteCommand( const command_s *psCmd ){
     /* void:v, (byte)u8:b:vb, (word)u16:w:vw, (int)u32:i:vi, (long)u64:l:vl, float:f:vf, string:s:vs, bool:o:vo */
     switch(g_vsFuncDefExArray[psCmd->iFctIndex].eParamType) {
         case v_type          :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.v_fct          ();
@@ -145,10 +145,12 @@ static int uShellExecuteCommand( const command_s *psCmd )
         case lio_type        :return g_vsFuncDefExArray[psCmd->iFctIndex].uFctType.lio_fct        (psCmd->vl[0], psCmd->vi[0], psCmd->vo[0]);
         default              :return uSHELL_ERR_PARAMS_PATTERN_NOT_IMPLEM;
     }
-} /* priv_uShellCoreExecuteCommand() */
+} /* uShellExecuteCommand() */
 
 
-/******************************************************************************/
+/**
+ * @brief Return the instance of the shell data as plugin to the shell engine
+ */
 uShellInst_s *pluginEntry( void )
 {
     return &sShellInstance;

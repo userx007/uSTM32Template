@@ -58,7 +58,7 @@ typedef enum {
 #if (1 == uSHELL_IMPLEMENTS_HISTORY)
 typedef struct {
     char *pDataBuffer;       // Buffer pointer
-    size_t szDataBufferSize; // Buffer szCapacity
+    size_t szDataBufferSize; // Buffer capacity
     size_t szDataHeadPos;    // Next write position
     size_t szOldestEntryPos; // Oldest entry position
     size_t szEntryCount;     // Number of entries
@@ -156,9 +156,6 @@ typedef struct {
 #if (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE)
     int                    *piAutocompleteIndexArray;
 #endif /* (1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE) */
-#if (1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)
-    FILE                  *pfileHistory;
-#endif /*(1 == uSHELL_IMPLEMENTS_SAVE_HISTORY)*/
 #if (1 == uSHELL_IMPLEMENTS_SHELL_EXIT)
     bool                    bKeepRuning;
 #endif /*(1 == uSHELL_IMPLEMENTS_SHELL_EXIT)*/

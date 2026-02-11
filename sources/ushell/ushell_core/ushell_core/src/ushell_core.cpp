@@ -19,22 +19,22 @@ MIT License Copyright (c) 2022, Victor Marian Popa (victormarianpopa@gmail.com)
 
 /* read/check tilde in escape sequence*/
 #if (defined(__MINGW32__) || defined(_MSC_VER)) /* i.e MinGW or Microsoft VisualStudio for Windows console */
-#define uSHELL_CORE_KEYHANDLE_SKIP_TILDE true
+#define uSHELL_CORE_KEYHANDLE_SKIP_TILDE   true
 #define uSHELL_CORE_KEYHANDLE_SKIP_BRACKET true
 #else
-#define uSHELL_CORE_KEYHANDLE_SKIP_TILDE (uSHELL_KEY_TILDE == uSHELL_GETCH())
+#define uSHELL_CORE_KEYHANDLE_SKIP_TILDE   (uSHELL_KEY_TILDE        == uSHELL_GETCH())
 #define uSHELL_CORE_KEYHANDLE_SKIP_BRACKET (uSHELL_KEY_LEFT_BRACKET == uSHELL_GETCH())
 #endif
 
 #if (1 == uSHELL_IMPLEMENTS_HISTORY)
-#define uSHELL_HISTORY_METADATA_SIZE 4U // embedded metadata: 2 bytes at start + 2 bytes at end
-#endif                                  /*(1 == uSHELL_IMPLEMENTS_HISTORY)*/
+#define uSHELL_HISTORY_METADATA_SIZE  4U  // embedded metadata: 2 bytes at start + 2 bytes at end
+#endif /*(1 == uSHELL_IMPLEMENTS_HISTORY)*/
 
 /* concatenate strings */
-#define FRMT(a, b) a b uSHELL_RESET_COLOR
+#define FRMT(a,b)       a b uSHELL_RESET_COLOR
 
 /* defines */
-#define uSHELL_NEWLINE "\n\r"
+#define uSHELL_NEWLINE      "\n\r"
 #define uSHELL_INVALID_VALUE (-1)
 
 /*==============================================================================
@@ -349,44 +349,26 @@ void Microshell::m_CorePrintError(const int iError) {
     bool bIsInvalidNumError = false;
     bool bIsNumBigValueError = false;
 
-    switch (iError) {
-    case uSHELL_ERR_FUNCTION_NOT_FOUND: {
-        pstrErrorString = "command not found";
-    } break;
-    case uSHELL_ERR_WRONG_NUMBER_ARGS: {
-        pstrErrorString = "wrong number of arguments";
-    } break;
-    case uSHELL_ERR_PARAM_TYPE_NOT_IMPLEM: {
-        pstrErrorString = "data type not implem/enabled";
-    } break;
-    case uSHELL_ERR_PARAMS_PATTERN_NOT_IMPLEM: {
-        pstrErrorString = "params pattern not implem/enabled";
-    } break;
-    case uSHELL_ERR_STRING_NOT_CLOSED: {
-        pstrErrorString = "string not closed";
-    } break;
-    case uSHELL_ERR_TOO_MANY_ARGS: {
-        bIsTooManyArgsError = true;
-    } break;
-    case uSHELL_ERR_INVALID_NUMBER: {
-        bIsInvalidNumError = true;
-    } break;
-    case uSHELL_ERR_VALUE_TOO_BIG: {
-        bIsNumBigValueError = true;
-    } break;
-    default: {
-        pstrErrorString = pstrErrorUnknown;
-    } break;
+    switch(iError) {
+        case uSHELL_ERR_FUNCTION_NOT_FOUND       : { pstrErrorString = "command not found";}                 break;
+        case uSHELL_ERR_WRONG_NUMBER_ARGS        : { pstrErrorString = "wrong number of arguments";}         break;
+        case uSHELL_ERR_PARAM_TYPE_NOT_IMPLEM    : { pstrErrorString = "data type not implem/enabled";}      break;
+        case uSHELL_ERR_PARAMS_PATTERN_NOT_IMPLEM: { pstrErrorString = "params pattern not implem/enabled";} break;
+        case uSHELL_ERR_STRING_NOT_CLOSED        : { pstrErrorString = "string not closed"; }                break;
+        case uSHELL_ERR_TOO_MANY_ARGS            : { bIsTooManyArgsError = true;} break;
+        case uSHELL_ERR_INVALID_NUMBER           : { bIsInvalidNumError  = true;} break;
+        case uSHELL_ERR_VALUE_TOO_BIG            : { bIsNumBigValueError = true;} break;
+        default                                  : { pstrErrorString = pstrErrorUnknown;} break;
     }
-    if ((true == bIsInvalidNumError) || (true == bIsTooManyArgsError) || (true == bIsNumBigValueError)) {
-        const char *pstrErrorDescription = bIsInvalidNumError ? "invalid " : bIsTooManyArgsError ? "too many args of type " : bIsNumBigValueError ? "value too big for " : pstrErrorUnknown;
+    if((true == bIsInvalidNumError) || (true == bIsTooManyArgsError) || (true == bIsNumBigValueError)) {
+        const char *pstrErrorDescription = bIsInvalidNumError  ? "invalid " :
+                                           bIsTooManyArgsError ? "too many args of type " :
+                                           bIsNumBigValueError ? "value too big for " : pstrErrorUnknown;
         const char *pstrErrorDetail = (m_sCommand.eDataType < uSHELL_DATA_TYPE_LAST) ? m_vstrTypeNames[m_sCommand.eDataType] : pstrErrorUnknown;
 
-        uSHELL_PRINTF(FRMT(uSHELL_ERROR_COLOR, "\r%s%s%s (arg:%d) | %s:%s\n"), pstrErrorCaption, pstrErrorDescription, pstrErrorDetail, (m_sCommand.iErrorInfo + 1), m_sCommand.pstrFctName,
-                      m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef);
+        uSHELL_PRINTF(FRMT(uSHELL_ERROR_COLOR, "\r%s%s%s (arg:%d) | %s:%s\n"), pstrErrorCaption, pstrErrorDescription, pstrErrorDetail, (m_sCommand.iErrorInfo + 1), m_sCommand.pstrFctName, m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef);
     } else {
-        uSHELL_PRINTF(FRMT(uSHELL_ERROR_COLOR, "\r%s%s | %s:%s\n"), pstrErrorCaption, pstrErrorString, m_sCommand.pstrFctName,
-                      ((uSHELL_ERR_FUNCTION_NOT_FOUND == iError) ? pstrErrorUnknown : m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef));
+        uSHELL_PRINTF(FRMT(uSHELL_ERROR_COLOR, "\r%s%s | %s:%s\n"), pstrErrorCaption, pstrErrorString, m_sCommand.pstrFctName, ((uSHELL_ERR_FUNCTION_NOT_FOUND == iError) ? pstrErrorUnknown : m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef));
     }
 } /* m_CorePrintError() */
 
@@ -411,10 +393,9 @@ int Microshell::m_CoreHandleBorderedStrings(char **ppstrToken, char **ppstrRest,
         if (true == bFound) {
             bFound = false;
             **ppstrRest = '\0';
-            while (*m_pstrTokenSeparator == *(++(*ppstrRest)))
-                ; /* cleanup the trailing separators */
-            if ('s' == m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef[(m_sCommand.iTypIndex)++]) {
-                if (m_sCommand.iNrStrings < uSHELL_MAX_PARAMS_STRING) {
+            while(*m_pstrTokenSeparator == *(++(*ppstrRest)));   /* cleanup the trailing separators */
+            if('s' == m_pInst->psFuncDefArray[m_sCommand.iFctIndex].pstrFuncParamDef[(m_sCommand.iTypIndex)++]) {
+                if(m_sCommand.iNrStrings < uSHELL_MAX_PARAMS_STRING) {
                     m_sCommand.vs[m_sCommand.iNrStrings++] = *ppstrToken;
                     ++(*pIntArgCounter);
                 } else {
@@ -472,8 +453,7 @@ inline void Microshell::m_CorePutString(const char *pstrArray) {
 
 /*----------------------------------------------------------------------------*/
 inline void Microshell::m_CoreRemoveTrailingSpaces(void) {
-    while (uSHELL_KEY_SPACE == m_pstrInput[--m_iInputPos])
-        ;
+    while(uSHELL_KEY_SPACE == m_pstrInput[--m_iInputPos]);
     m_pstrInput[++m_iInputPos] = '\0';
 } /* m_CoreRemoveTrailingSpaces() */
 
@@ -513,8 +493,7 @@ void Microshell::m_CoreProcessKeyPress(const char cKeyPressed) {
         m_CoreHandleKeyBackspace();
     } break;
 #if (defined(__MINGW32__) || defined(_MSC_VER))
-    case uSHELL_KEY_ESCAPESEQ1: /* fall through (needed for _MSC_VER for INS/DEL on numeric
-                       pad*/
+    case uSHELL_KEY_ESCAPESEQ1: /* fall through (needed for _MSC_VER for INS/DEL on numeric pad*/
 #endif                          /*(defined(__MINGW32__) || defined(_MSC_VER)) */
     case uSHELL_KEY_ESCAPESEQ: {
         m_CoreHandleKeyEscapeSeq();
@@ -623,8 +602,7 @@ void Microshell::m_CoreHandleKeyDefault(const char cKeyPressed) {
             uSHELL_PUTCH(cKeyPressed);
 #endif /* (1 == uSHELL_IMPLEMENTS_DISABLE_ECHO) */
             } else {
-                /* print ] and block the movement of the cursor and insertion of
-                 * data in the input buffer */
+                /* print ] and block the movement of the cursor and insertion of data in the input buffer */
                 m_CorePutString(FRMT(uSHELL_ERROR_COLOR, "]\033[0m\033[D"));
             }
 #if (1 == uSHELL_IMPLEMENTS_EDITMODE)
@@ -845,8 +823,7 @@ bool Microshell::m_CoreHandleShortcuts(void) {
         if (cKey == m_pInst->psShortcutsArray[i].cSymbol) {
             if (nullptr != m_pInst->psShortcutsArray[i].pfShortcut) {
                 char *pstrArgs = m_pstrInput;
-                while (uSHELL_KEY_SPACE == *(++pstrArgs))
-                    ;
+                while(uSHELL_KEY_SPACE == *(++pstrArgs));
 #if (1 == uSHELL_IMPLEMENTS_HISTORY)
                 if (i > 0) {
                     m_HistoryWrite();
@@ -1865,10 +1842,11 @@ void Microshell::m_AutocomplRead(const dir_e eDir) {
             m_sAutocomplete.iSearchIndex %= m_sAutocomplete.iNrCrtElems;
             uSHELL_PRINTF("\r\033[%dC\033[K", m_pInst->iPromptLength);
 #if (defined(__MINGW32__) || defined(_MSC_VER))
-            strncpy_s(m_pstrInput, sizeof(m_pstrInput), m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput));
+            strncpy_s(m_pstrInput, sizeof(m_pstrInput), m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput) - 1);
 #else
             strncpy(m_pstrInput, m_pInst->psFuncDefArray[m_pInst->piAutocompleteIndexArray[m_sAutocomplete.iSearchIndex]].pstrFctName, sizeof(m_pstrInput) - 1);
 #endif /*(defined(__MINGW32__) || defined(_MSC_VER))*/
+            m_pstrInput[sizeof(m_pstrInput) - 1] = '\0';           
             m_iInputPos = (int)strlen(m_pstrInput);
             m_AutocomplInsEndSpace();
             uSHELL_PRINTF("\r\033[%dC\033[K%s", m_pInst->iPromptLength, m_pstrInput);
@@ -2120,52 +2098,48 @@ char Microshell::m_cStringBorderSymbol = uSHELL_KEY_QUOTATION_MARK;
 #endif /*(defined(uSHELL_IMPLEMENTS_STRINGS) && (1 == uSHELL_SUPPORTS_SPACED_STRINGS))*/
 
 #if (1 == uSHELL_IMPLEMENTS_SMART_PROMPT)
-#define uSHELL_PROMPT_TABLE_BEGIN char Microshell::m_pstrPrompt[uSHELL_PROMPTI_LAST + 1] = ""
-#define uSHELL_PROMPT_CELL(a, b, c) ":"
-#define uSHELL_PROMPT_TABLE_END ;
+#define  uSHELL_PROMPT_TABLE_BEGIN      char Microshell::m_pstrPrompt[uSHELL_PROMPTI_LAST + 1] = ""
+#define  uSHELL_PROMPT_CELL(a, b, c)        ":"
+#define  uSHELL_PROMPT_TABLE_END        ;
 #include uSHELL_PROMPT_CONFIG_FILE
-#undef uSHELL_PROMPT_TABLE_BEGIN
-#undef uSHELL_PROMPT_CELL
-#undef uSHELL_PROMPT_TABLE_END
+#undef   uSHELL_PROMPT_TABLE_BEGIN
+#undef   uSHELL_PROMPT_CELL
+#undef   uSHELL_PROMPT_TABLE_END
 
-#define uSHELL_PROMPT_TABLE_BEGIN const char Microshell::m_pstrPromptInfo[uSHELL_PROMPTI_LAST + 1] = ""
-#define uSHELL_PROMPT_CELL(a, b, c) #b
-#define uSHELL_PROMPT_TABLE_END ;
+#define  uSHELL_PROMPT_TABLE_BEGIN      const char Microshell::m_pstrPromptInfo[uSHELL_PROMPTI_LAST + 1] = ""
+#define  uSHELL_PROMPT_CELL(a, b, c)        #b
+#define  uSHELL_PROMPT_TABLE_END        ;
 #include uSHELL_PROMPT_CONFIG_FILE
-#undef uSHELL_PROMPT_TABLE_BEGIN
-#undef uSHELL_PROMPT_CELL
-#undef uSHELL_PROMPT_TABLE_END
+#undef   uSHELL_PROMPT_TABLE_BEGIN
+#undef   uSHELL_PROMPT_CELL
+#undef   uSHELL_PROMPT_TABLE_END
 
-#define uSHELL_PROMPT_TABLE_BEGIN const char Microshell::m_pstrPromptInfoEditMode[uSHELL_PROMPTI_LAST + 1] = ""
-#define uSHELL_PROMPT_CELL(a, b, c) #c
-#define uSHELL_PROMPT_TABLE_END ;
+#define  uSHELL_PROMPT_TABLE_BEGIN      const char Microshell::m_pstrPromptInfoEditMode[uSHELL_PROMPTI_LAST + 1] = ""
+#define  uSHELL_PROMPT_CELL(a, b, c)        #c
+#define  uSHELL_PROMPT_TABLE_END        ;
 #include uSHELL_PROMPT_CONFIG_FILE
-#undef uSHELL_PROMPT_TABLE_BEGIN
-#undef uSHELL_PROMPT_CELL
-#undef uSHELL_PROMPT_TABLE_END
+#undef   uSHELL_PROMPT_TABLE_BEGIN
+#undef   uSHELL_PROMPT_CELL
+#undef   uSHELL_PROMPT_TABLE_END
 #endif /*(1 == uSHELL_IMPLEMENTS_SMART_PROMPT)*/
 
 #if (1 == uSHELL_IMPLEMENTS_COMMAND_HELP)
-#define uSHELL_DATA_TYPES_TABLE_BEGIN const char Microshell::m_vstrTypeMarks[uSHELL_TYPE_LAST] = {
-#define uSHELL_DATA_TYPE(a, b) b,
-#define uSHELL_DATA_TYPES_TABLE_END                                                                                                                                                                                                            \
-    }                                                                                                                                                                                                                                          \
-    ;
+#define  uSHELL_DATA_TYPES_TABLE_BEGIN  const char Microshell::m_vstrTypeMarks[uSHELL_TYPE_LAST] = {
+#define  uSHELL_DATA_TYPE(a, b)             b,
+#define  uSHELL_DATA_TYPES_TABLE_END    };
 #include uSHELL_DATA_TYPES_CONFIG_FILE
-#undef uSHELL_DATA_TYPES_TABLE_BEGIN
-#undef uSHELL_DATA_TYPE
-#undef uSHELL_DATA_TYPES_TABLE_END
+#undef   uSHELL_DATA_TYPES_TABLE_BEGIN
+#undef   uSHELL_DATA_TYPE
+#undef   uSHELL_DATA_TYPES_TABLE_END
 #endif /*(1 == uSHELL_IMPLEMENTS_COMMAND_HELP)*/
 
-#define uSHELL_DATA_TYPES_TABLE_BEGIN const char *Microshell::m_vstrTypeNames[uSHELL_TYPE_LAST] = {
-#define uSHELL_DATA_TYPE(a, b) #a,
-#define uSHELL_DATA_TYPES_TABLE_END                                                                                                                                                                                                            \
-    }                                                                                                                                                                                                                                          \
-    ;
+#define  uSHELL_DATA_TYPES_TABLE_BEGIN  const char *Microshell::m_vstrTypeNames[uSHELL_TYPE_LAST] = {
+#define  uSHELL_DATA_TYPE(a, b)             #a,
+#define  uSHELL_DATA_TYPES_TABLE_END    };
 #include uSHELL_DATA_TYPES_CONFIG_FILE
-#undef uSHELL_DATA_TYPES_TABLE_BEGIN
-#undef uSHELL_DATA_TYPE
-#undef uSHELL_DATA_TYPES_TABLE_END
+#undef   uSHELL_DATA_TYPES_TABLE_BEGIN
+#undef   uSHELL_DATA_TYPE
+#undef   uSHELL_DATA_TYPES_TABLE_END
 
 const char *Microshell::m_pstrCoreShortcutCaption = "\t##|#|i|s : info short|all|i|substr s\n\r"
 #if (1 == uSHELL_IMPLEMENTS_SHELL_EXIT)
@@ -2178,7 +2152,7 @@ const char *Microshell::m_pstrCoreShortcutCaption = "\t##|#|i|s : info short|all
                                                     "\t#A|a : autocomplete on|off\n\r"
 #endif /*(1 == uSHELL_IMPLEMENTS_AUTOCOMPLETE) */
 #if (1 == uSHELL_IMPLEMENTS_HISTORY)
-                                                    "\t#H|h|l|L|c|i : pHistory on|off|list|load|clear|exec i\n\r"
+                                                    "\t#H|h|l|L|c|i : history on|off|list|load|clear|exec i\n\r"
 #endif /*(1 == uSHELL_IMPLEMENTS_HISTORY) */
 #if defined(uSHELL_IMPLEMENTS_STRINGS)
 #if (1 == uSHELL_SUPPORTS_SPACED_STRINGS)

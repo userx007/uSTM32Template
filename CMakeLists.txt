@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.5)
 project(stm32app C CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED)
+
+# Enable warnings project-wide
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(-Wall -Wextra -Wpedantic)
+    add_compile_options(-Wno-cast-function-type)
+elseif(MSVC)
+    add_compile_options(/W4)
+endif()
+
 # Putty, Zoc
 # add_compile_definitions(SERIAL_TERMINAL)
 
