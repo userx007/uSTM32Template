@@ -1,0 +1,32 @@
+##############################################################
+# stm32f4 Embassy Minimal - Renode Script
+##############################################################
+
+# Create machine
+mach create "stm32f4"
+
+# Load stm32f4 platform description
+machine LoadPlatformDescription @platforms/cpus/stm32f4.repl
+
+# Load firmware
+sysbus LoadELF @target/thumbv7em-none-eabihf/release/stm32f4-embassy-shell
+
+# Load Python helper functions
+include @cpu_status.py
+
+# UART configuration
+showAnalyzer sysbus.usart2
+logLevel 3 sysbus.usart2
+
+# Start GDB server
+machine StartGdbServer 3333
+
+# Start emulation
+start
+
+echo ""
+echo "To check CPU status: python \"cpu_status('')\""
+
+#USART1: PA9 (TX), PA10 (RX)
+#USART2: PA2 (TX), PA3 (RX) ← You're using this one
+#USART6: PC6 (TX), PC7 (RX)

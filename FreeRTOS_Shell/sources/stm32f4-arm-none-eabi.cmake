@@ -22,7 +22,7 @@ set(CMAKE_ASM_COMPILER ${TOOLCHAIN_PREFIX}-gcc)
 # Optional: GDB for debugging
 set(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
 
-# Flags (LTO removed to avoid compatibility issues)
+# Flags
 set(CPU_FLAGS "-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard")
 set(CMAKE_C_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F4")
 set(CMAKE_CXX_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -I ${CMAKE_SOURCE_DIR}/libopencm3/include -DSTM32F4 -fno-exceptions -fno-rtti")

@@ -30,5 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Build Folders
 build_stm32f411/
 build_stm32f103/
+target/

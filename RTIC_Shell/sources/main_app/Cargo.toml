@@ -1,0 +1,37 @@
+[package]
+name = "stm32f411-rtic"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+hosted = []
+
+[dependencies]
+# Enable async feature!
+ushell2 = { path = "../ushell/ushell2", features = ["async"] }
+ushell_usercode = { path = "../ushell_usercode" }
+ushell_config = { path = "../ushell/ushell_config" }
+ushell_dispatcher = { path = "../ushell/ushell_dispatcher" }
+ushell_input = { path = "../ushell/ushell_input" }
+ushell_logger = { path = "../ushell/ushell_logger" }
+
+# RTIC framework
+rtic = { version = "2.1", features = ["thumbv7-backend"] }
+rtic-monotonics = { version = "2.0", features = ["cortex-m-systick"] }
+
+# Cortex-M
+cortex-m = "0.7.7"
+cortex-m-rt = "0.7.3"
+
+# STM32 HAL 
+stm32f4xx-hal = { version = "0.21", features = ["stm32f411"] }
+
+# Panic handler
+panic-halt = "0.2"
+
+# Heapless data structures
+heapless = "0.9.1"
+nb = "1.0"
+
+
+

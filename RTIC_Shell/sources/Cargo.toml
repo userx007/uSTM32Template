@@ -1,0 +1,37 @@
+[workspace]
+members = [
+    "main_app",
+    "ushell_usercode",
+    "ushell/ushell_config",
+    "ushell/ushell_logger",
+    "ushell/ushell_input",
+    "ushell/ushell_dispatcher",
+    "ushell/ushell2"
+]
+resolver = "2"
+
+[profile.dev]
+debug = 2           # Full debug while developing
+opt-level = 1       # Some optimization so it's not too slow
+
+[profile.release]
+debug = 0           # Remove debug info to save flash
+opt-level = "z"     # Smallest possible binary
+lto = true          # Enable link-time optimization
+codegen-units = 1   # Better optimization
+
+# opt-level
+# ----------------------------------------------------------------------------------------------------------------
+# 0   No optimization                | Fastest compile time, largest binary, slowest runtime. Good for debugging.
+# 1   Basic optimization             | Some optimization without significantly increasing compile time.
+# 2   Some optimization              | Balance between compile time and performance.
+# 3   All optimizations              | Maximum performance, slower compile time. Default for release builds.
+# "s" Optimize for size              | Like level 2, but also tries to reduce binary size.
+# "z" Aggressively optimize for size | Even more size reduction than "s", may sacrifice some speed.
+# ----------------------------------------------------------------------------------------------------------------
+
+# debug level
+# ----------------------------------------------------------------------------------------------------------------
+# 0 or false         | No debug info - no debugging symbols. Smallest binary, but can't debug with gdb/lldb.
+# 1 Line tables only | Minimal debug info - just enough for backtraces with line numbers. Smaller than level 2.
+# 2 or true          | Full debug info - complete debugging symbols, default for dev builds. Allows full debugging but increases binary size significantly.
