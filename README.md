@@ -1,7 +1,8 @@
 # uSTM32Template
 
 [**STM32 + Embassy RTOS + Shell**](Embassy_Shell/README.md)<br>
-Step-by-Step Guide STM32F4xx with Embassy-rs
+
+**Step-by-Step Guide STM32F4xx with Embassy-rs**
 
 - Embassy is a modern, lightweight, asynchronous runtime and framework for embedded systems written in Rust.
 It enables writing highly efficient, concurrent firmware using Rust’s async/await features — without needing a traditional RTOS.
@@ -13,7 +14,8 @@ It enables writing highly efficient, concurrent firmware using Rust’s async/aw
 ---
 
 [**STM32 + RTIC + Shell**](RTIC_Shell/README.md)<br>
-Step-by-Step Guide STM32F4xx with Embassy-rs
+
+**Step-by-Step Guide STM32F4xx with RTIC**
 
 - RTIC (Real-Time Interrupt-driven Concurrency) is a lightweight concurrency framework for embedded systems written in Rust.
 It enables developers to build real-time applications with deterministic behavior by leveraging hardware interrupts and a priority-based scheduling model.
@@ -25,7 +27,8 @@ It enables developers to build real-time applications with deterministic behavio
 ---
 
 [**STM32F + FreeRTOS + Shell**](FreeRTOS_Shell/README.md)<br>
-Step-by-Step Guide STM32F4xx with FreeRTOS
+
+**Step-by-Step Guide STM32F4xx with FreeRTOS**
 
 - FreeRTOS is a widely used, open-source real-time operating system designed for microcontrollers and small embedded systems.
 It enables developers to build deterministic, multitasking applications using a preemptive priority-based scheduler.
