@@ -23,31 +23,25 @@ typedef struct {
 /* Other tasks post to this queue to display text */
 static QueueHandle_t xLcdQueue = nullptr;
 
+/* ── Clock & GPIO setup ──────────────────────────────────────────────────── */
 
-
-static void setup_clock(void) {
-    /* Setup 72MHz from 8MHz HSE crystal (standard for STM32F103) */
+static void setup_clock(void)
+{
     rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
 }
 
-static void setup_gpio(void) {
+static void setup_gpio(void)
+{
     rcc_periph_clock_enable(RCC_GPIOC);
-
-    /*
-     * STM32F103 uses the older libopencm3 GPIO API (no gpio_mode_setup).
-     * gpio_set_mode() combines mode + CNF in a single call.
-     * PC13 is the built-in LED on most Blue Pill / Maple Mini boards.
-     */
     gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ,
                   GPIO_CNF_OUTPUT_PUSHPULL, GPIO13);
 }
 
-
 /* ── Helper: post a message to the LCD task ──────────────────────────────── */
 
-void LCD_Post(uint8_t row, uint8_t col, const char *text) {
-    if (!xLcdQueue) 
-        return;
+void LCD_Post(uint8_t row, uint8_t col, const char *text)
+{
+    if (!xLcdQueue) return;
 
     LcdMessage_t msg;
     msg.row = row;
@@ -66,7 +60,8 @@ void LCD_Post(uint8_t row, uint8_t col, const char *text) {
 
 /* ── LCD task ────────────────────────────────────────────────────────────── */
 
-void vTaskLCD(void *pvParameters) {
+void vTaskLCD(void *pvParameters)
+{
     (void)pvParameters;
 
     static HD44780_PCF8574 lcd(0x27, 16, 2);   /* PCF8574 at 0x27, 16x2 display */
@@ -89,47 +84,55 @@ void vTaskLCD(void *pvParameters) {
     }
 }
 
+/* ── Blink task (also posts status to LCD) ───────────────────────────────── */
 
-void vTaskBlink(void *pvParameters) {
+void vTaskBlink(void *pvParameters)
+{
     (void)pvParameters;
     static int i = 0;
 
     while (1) {
         gpio_toggle(GPIOC, GPIO13);
 
+        /* Update LCD row 1 with current state */
         LCD_Post(1, 0, i == 0 ? "LED: OFF        " : "LED: ON         ");
-
         i = 1 - i;
 
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
-void vTaskShell(void *pvParameters) {
-    (void)pvParameters;
+/* ── Shell task ──────────────────────────────────────────────────────────── */
 
+void vTaskShell(void *pvParameters)
+{
+    (void)pvParameters;
     Microshell::getShellPtr(pluginEntry(), "root")->Run();
 }
 
+/* ── FreeRTOS hooks ──────────────────────────────────────────────────────── */
 
-void vApplicationMallocFailedHook(void) {
-    /* Called if a call to pvPortMalloc() fails */
+void vApplicationMallocFailedHook(void)
+{
     while (1);
 }
 
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
+{
     (void)xTask;
     (void)pcTaskName;
-    /* Called if a task overflows its stack */
     while (1);
 }
 
-void vApplicationIdleHook(void) {
+void vApplicationIdleHook(void)
+{
     __asm volatile("wfi");
 }
 
+/* ── main ────────────────────────────────────────────────────────────────── */
 
-int main(void) {
+int main(void)
+{
     setup_clock();
     setup_gpio();
     uart_setup();
@@ -143,8 +146,6 @@ int main(void) {
 
     vTaskStartScheduler();
 
-    /* Should never reach here */
     while (1);
-
     return 0;
 }

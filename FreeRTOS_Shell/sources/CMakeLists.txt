@@ -83,6 +83,17 @@ target_link_libraries(${PROJECT_NAME}.elf
     ushell_core_utils
     ushell_user_root
     uart_access
+    hd44780
     freertos
     ${LIBOPENCM3_LIB}
+)
+
+add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+    COMMAND arm-none-eabi-objcopy -O binary
+            $<TARGET_FILE:${PROJECT_NAME}.elf>
+            ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.bin
+    COMMAND arm-none-eabi-objcopy -O ihex
+            $<TARGET_FILE:${PROJECT_NAME}.elf>
+            ${CMAKE_BINARY_DIR}/${PROJECT_NAME}.hex
+    COMMENT "Converting ELF to BIN and HEX..."
 )

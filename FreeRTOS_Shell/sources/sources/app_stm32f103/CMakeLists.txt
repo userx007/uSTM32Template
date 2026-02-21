@@ -9,10 +9,11 @@ add_library(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
+        freertos
+        hd44780
         uart_access
         ushell_core
         ushell_core_utils
         ushell_user_root
-        freertos
 )
 
