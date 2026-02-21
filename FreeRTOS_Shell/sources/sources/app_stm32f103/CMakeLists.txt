@@ -5,7 +5,6 @@ project(user_main)
 add_library(${PROJECT_NAME}
     OBJECT
         src/main_freertos_shell.cpp
-#        src/main_bare_metal_shell.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}

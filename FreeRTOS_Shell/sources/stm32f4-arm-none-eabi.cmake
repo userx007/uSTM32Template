@@ -11,6 +11,10 @@
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR cortex-m4)
 
+# CMake-visible target identifier — use in CMakeLists.txt with:
+#   if(STM32_FAMILY STREQUAL "F4")
+set(STM32_FAMILY "F4" CACHE STRING "STM32 family: F1 or F4")
+
 # Toolchain prefix
 set(TOOLCHAIN_PREFIX arm-none-eabi)
 
