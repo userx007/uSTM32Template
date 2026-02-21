@@ -70,7 +70,20 @@ void vTaskLCD(void *pvParameters) {
     (void)pvParameters;
 
     static HD44780_PCF8574 lcd(0x27, 16, 2);   /* PCF8574 at 0x27, 16x2 display */
-    lcd.init();
+
+    if (!lcd.init()) {
+        /* I2C probe failed: wrong address, missing component, or
+         * PICSimLab PCF8574 not connected on I2C1 (PB6=SCL, PB7=SDA).
+         * Try 0x3F if you have a PCF8574A backpack. */
+        uSHELL_PRINTF("LCD I2C FAIL - check address & wiring\n");
+        while (!lcd.ok()) {
+            uSHELL_PRINTF("LCD retry...\n");
+            vTaskDelay(pdMS_TO_TICKS(2000));
+            lcd.init();
+        }
+    }
+
+    uSHELL_PRINTF("LCD OK\n");
 
     lcd.clear();
     lcd.setCursor(0, 0);
@@ -101,7 +114,7 @@ void vTaskBlink(void *pvParameters) {
 
         i = 1 - i;
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
 
@@ -136,6 +149,8 @@ int main(void) {
 
     /* Create the queue before any task that uses it */
     xLcdQueue = xQueueCreate(8, sizeof(LcdMessage_t));
+
+
 
     xTaskCreate(vTaskLCD,   "LCD",   512, NULL, 3, NULL);   /* Highest: owns I2C */
     xTaskCreate(vTaskBlink, "Blink", 128, NULL, 2, NULL);
