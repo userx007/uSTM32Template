@@ -637,11 +637,10 @@ dependencies = [
  "cortex-m-rt",
  "embassy-executor",
  "embassy-stm32",
- "embassy-sync 0.6.2",
  "embassy-time",
  "heapless 0.9.2",
- "nb 1.1.0",
  "panic-halt",
+ "uart_hal",
  "ushell2",
  "ushell_config",
  "ushell_dispatcher",
@@ -674,6 +673,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "411c5bf740737c7918b8b1fe232dca4dc9f8e754b8ad5e20966814001ed0ac6b"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "uart_hal"
+version = "0.1.0"
+dependencies = [
+ "embassy-executor",
+ "embassy-stm32",
+ "embassy-sync 0.6.2",
+ "embassy-time",
+ "nb 1.1.0",
 ]
 
 [[package]]

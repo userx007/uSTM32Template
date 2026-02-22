@@ -1,0 +1,69 @@
+[package]
+name = "uart_hal"
+version = "0.1.0"
+edition = "2021"
+authors = []
+description = "Reusable UART + async shell HAL layer for STM32 + Embassy"
+license = "MIT OR Apache-2.0"
+repository = ""
+readme = "README.md"
+
+# This is a no_std library targeting bare-metal embedded systems.
+# It provides:
+#   - Static UART TX/RX global owners (USART2 + DMA1_CH6)
+#   - UartWriter (core::fmt::Write over blocking TX)
+#   - uart_write / uart_flush helpers for shell TX closures
+#   - UART_RX_CHANNEL (Embassy channel, 1024-byte capacity)
+#   - uart_rx_task (Embassy async task, nb_read polling loop)
+
+#[lib]
+#name = "uart_hal"
+#path = "uart_hal.rs"
+
+# ============================================================================
+# Dependencies
+# ============================================================================
+
+[dependencies]
+
+# Embassy executor — provides #[embassy_executor::task] and the async runtime
+embassy-executor = { version = "0.6", features = ["arch-cortex-m", "executor-thread"] }
+
+# Embassy STM32 HAL — USART2, DMA1_CH6, NoDma, UartTx/UartRx
+# Adjust the chip feature to match your exact target (e.g. stm32f401re, stm32l476rg, …)
+embassy-stm32 = { version = "0.1", features = [
+    "stm32f411re",       # <-- change to your chip
+    "unstable-pac",
+    "memory-x",
+    "time-driver-any",
+] }
+
+# Embassy sync primitives — Channel, CriticalSectionRawMutex
+embassy-sync = { version = "0.6.0" }
+
+# Embassy time — Timer used in uart_rx_task for yielding
+embassy-time = { version = "0.3.0" }
+
+# nb — non-blocking trait used by nb_read()
+nb = { version = "1" }
+
+# ============================================================================
+# Dev-dependencies (for host-side unit tests, if any)
+# ============================================================================
+
+[dev-dependencies]
+# none currently
+
+# ============================================================================
+# Build profile tweaks (typical for embedded)
+# ============================================================================
+
+[profile.release]
+opt-level = "z"     # Optimise for size
+lto = true
+codegen-units = 1
+debug = false
+
+[profile.dev]
+opt-level = 1       # Light optimisation keeps debugger usable
+debug = true
