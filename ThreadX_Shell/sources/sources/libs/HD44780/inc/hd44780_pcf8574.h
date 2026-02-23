@@ -1,12 +1,11 @@
 #pragma once
 
 #include <stdint.h>
-#include <stddef.h>
 #include <stdbool.h>
 
 /*
  * HD44780 LCD driver via PCF8574 I2C expander
- * Target: STM32F103 + libopencm3
+ * Target: STM32F1xx / STM32F4xx  — STM32 HAL + ThreadX
  *
  * PCF8574 → HD44780 pin mapping (standard backpack wiring):
  *   P0 → RS   (Register Select)
@@ -18,12 +17,11 @@
  *   P6 → D6
  *   P7 → D7
  *
- * I2C1 pins on STM32F103:
- *   PB6 → SCL
- *   PB7 → SDA
- *   (Requires 4.7kΩ pull-up resistors to 3.3V on both lines)
+ * I2C1 pins:
+ *   STM32F1xx : PB6 → SCL, PB7 → SDA  (open-drain, 4.7kΩ pull-ups to 3.3V)
+ *   STM32F4xx : PB6 → SCL, PB7 → SDA  AF4
  *
- * PCF8574  default I2C address: 0x27  (A2=A1=A0=1)
+ * PCF8574  default I2C address: 0x27  (A2=A1=A0=1)  — 7-bit, HAL uses <<1
  * PCF8574A default I2C address: 0x3F  (A2=A1=A0=1)
  */
 
@@ -47,10 +45,9 @@ public:
                     uint8_t rows = LCD_ROWS);
 
     /**
-     * Initialise I2C and the LCD.
+     * Initialise I2C peripheral and the LCD.
      * @return true  on success
-     * @return false if the PCF8574 did not acknowledge (wrong address,
-     *               not connected, or PICSimLab component absent)
+     * @return false if the PCF8574 did not acknowledge
      */
     bool init(void);
 
@@ -64,11 +61,10 @@ public:
     void cursorOn(bool on);
     void blinkOn(bool on);
 
-    /** True if the last I2C transaction succeeded. */
     bool ok(void) const { return _i2c_ok; }
 
 private:
-    uint8_t _addr;
+    uint8_t _addr;          /* 7-bit address — HAL shifts it internally */
     uint8_t _cols;
     uint8_t _rows;
     uint8_t _backlight;

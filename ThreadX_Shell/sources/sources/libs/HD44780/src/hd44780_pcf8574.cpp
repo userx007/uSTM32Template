@@ -1,54 +1,92 @@
 #include "hd44780_pcf8574.h"
-#include <libopencm3/stm32/rcc.h>
-#include <libopencm3/stm32/gpio.h>
-#include <libopencm3/stm32/i2c.h>
-#include <FreeRTOS.h>
-#include <task.h>
+
+#if defined(STM32F1)
+#  include "stm32f1xx_hal.h"
+#elif defined(STM32F4)
+#  include "stm32f4xx_hal.h"
+#else
+#  error "Define STM32F1 or STM32F4 in your build system"
+#endif
+
+#include "tx_api.h"   /* tx_thread_sleep, TX_TIMER_TICKS_PER_SECOND */
 
 #define DEBUG_ACTIVE 0
 
 #if (1 == DEBUG_ACTIVE)
-#include "ushell_core_printout.h"   /* uSHELL_PRINTF for UART debug */
-#endif /* (1 == DEBUG_ACTIVE) */
+#  include "ushell_core_printout.h"
+#endif
 
 /* ── HD44780 instruction set ─────────────────────────────────────────────── */
-#define HD_CLEARDISPLAY     0x01
-#define HD_RETURNHOME       0x02
-#define HD_ENTRYMODESET     0x04
-#define HD_DISPLAYCONTROL   0x08
-#define HD_FUNCTIONSET      0x20
-#define HD_SETDDRAMADDR     0x80
+#define HD_CLEARDISPLAY   0x01
+#define HD_RETURNHOME     0x02
+#define HD_ENTRYMODESET   0x04
+#define HD_DISPLAYCONTROL 0x08
+#define HD_FUNCTIONSET    0x20
+#define HD_SETDDRAMADDR   0x80
 
-#define HD_ENTRY_LEFT       0x02
-#define HD_ENTRY_SHIFTDEC   0x00
+#define HD_ENTRY_LEFT     0x02
+#define HD_ENTRY_SHIFTDEC 0x00
 
-#define HD_DISPLAY_ON       0x04
-#define HD_CURSOR_ON        0x02
-#define HD_BLINK_ON         0x01
+#define HD_DISPLAY_ON     0x04
+#define HD_CURSOR_ON      0x02
+#define HD_BLINK_ON       0x01
 
-#define HD_4BITMODE         0x00
-#define HD_2LINE            0x08
-#define HD_5x8DOTS          0x00
+#define HD_4BITMODE       0x00
+#define HD_2LINE          0x08
+#define HD_5x8DOTS        0x00
 
-#define I2C_TIMEOUT         100000UL
+#define I2C_TIMEOUT_MS    10UL
+
+/* HAL uses 8-bit address (7-bit << 1) */
+#define I2C_ADDR_8BIT(a)  ((a) << 1)
 
 static const uint8_t ROW_OFFSETS[] = { 0x00, 0x40, 0x14, 0x54 };
 
-#if (1 == DEBUG_ACTIVE)
-static void dbg_byte(const char *label, uint8_t val)
+/* ── ThreadX delay helper ────────────────────────────────────────────────── */
+static inline void lcd_delay_ms(uint32_t ms)
 {
-    static const char h[] = "0123456789ABCDEF";
-    char buf[16];
-    uint8_t i = 0;
-    while (label[i] && i < 8) { buf[i] = label[i]; i++; }
-    buf[i++] = '0'; buf[i++] = 'x';
-    buf[i++] = h[(val >> 4) & 0xF];
-    buf[i++] = h[val & 0xF];
-    buf[i++] = '\n'; buf[i] = '\0';
-    uSHELL_PRINTF(buf);
+    /* Convert ms to ThreadX ticks (rounded up to at least 1 tick) */
+    ULONG ticks = (ms * TX_TIMER_TICKS_PER_SECOND + 999UL) / 1000UL;
+    if (ticks == 0) ticks = 1;
+    tx_thread_sleep(ticks);
 }
-#endif /*(1 == DEBUG_ACTIVE)*/
 
+/* ── Module-level HAL handle ─────────────────────────────────────────────── */
+static I2C_HandleTypeDef hi2c1;
+
+/* ── HAL MSP hook ────────────────────────────────────────────────────────── */
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
+{
+    if (hi2c->Instance != I2C1)
+        return;
+
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_I2C1_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio = {};
+
+#if defined(STM32F1)
+    /*
+     * STM32F1: PB6=SCL, PB7=SDA — alternate function open-drain
+     * No GPIO_Alternate field on F1; AF is implicit for I2C pins.
+     */
+    gpio.Pin   = GPIO_PIN_6 | GPIO_PIN_7;
+    gpio.Mode  = GPIO_MODE_AF_OD;
+    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOB, &gpio);
+
+#elif defined(STM32F4)
+    /*
+     * STM32F4: PB6=SCL AF4, PB7=SDA AF4
+     */
+    gpio.Pin       = GPIO_PIN_6 | GPIO_PIN_7;
+    gpio.Mode      = GPIO_MODE_AF_OD;
+    gpio.Pull      = GPIO_NOPULL;
+    gpio.Speed     = GPIO_SPEED_FREQ_HIGH;
+    gpio.Alternate = GPIO_AF4_I2C1;
+    HAL_GPIO_Init(GPIOB, &gpio);
+#endif
+}
 
 /* ── Constructor ─────────────────────────────────────────────────────────── */
 HD44780_PCF8574::HD44780_PCF8574(uint8_t i2c_address, uint8_t cols, uint8_t rows)
@@ -63,72 +101,37 @@ HD44780_PCF8574::HD44780_PCF8574(uint8_t i2c_address, uint8_t cols, uint8_t rows
 /* ── I2C hardware setup ──────────────────────────────────────────────────── */
 void HD44780_PCF8574::i2c_setup(void)
 {
-    rcc_periph_clock_enable(RCC_I2C1);
-    rcc_periph_clock_enable(RCC_GPIOB);
+    hi2c1.Instance             = I2C1;
+    hi2c1.Init.ClockSpeed      = 100000;          /* 100 kHz standard mode */
+    hi2c1.Init.DutyCycle       = I2C_DUTYCYCLE_2;
+    hi2c1.Init.OwnAddress1     = 0;
+    hi2c1.Init.AddressingMode  = I2C_ADDRESSINGMODE_7BIT;
+    hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLED;
+    hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLED;
+    hi2c1.Init.NoStretchMode   = I2C_NOSTRETCH_DISABLED;
 
-    gpio_set_mode(GPIOB,
-                  GPIO_MODE_OUTPUT_50_MHZ,
-                  GPIO_CNF_OUTPUT_ALTFN_OPENDRAIN,
-                  GPIO6 | GPIO7);
-
-    rcc_periph_reset_pulse(RST_I2C1);
-    i2c_peripheral_disable(I2C1);
-
-    i2c_set_clock_frequency(I2C1, 36);
-    i2c_set_standard_mode(I2C1);
-    i2c_set_ccr(I2C1, 180);
-    i2c_set_trise(I2C1, 37);
-
-    i2c_peripheral_enable(I2C1);
+    HAL_I2C_Init(&hi2c1);
 }
 
 /* ── Low-level I2C byte write ────────────────────────────────────────────── */
 bool HD44780_PCF8574::i2c_write_byte(uint8_t data)
 {
-    uint32_t t;
-
-    t = I2C_TIMEOUT;
-    while (I2C_SR2(I2C1) & I2C_SR2_BUSY)
-        if (--t == 0) { _i2c_ok = false; return false; }
-
-    i2c_send_start(I2C1);
-
-    t = I2C_TIMEOUT;
-    while (!((I2C_SR1(I2C1) & I2C_SR1_SB) && (I2C_SR2(I2C1) & I2C_SR2_MSL)))
-        if (--t == 0) { _i2c_ok = false; return false; }
-
-    i2c_send_7bit_address(I2C1, _addr, I2C_WRITE);
-
-    t = I2C_TIMEOUT;
-    while (!(I2C_SR1(I2C1) & I2C_SR1_ADDR)) {
-        if (I2C_SR1(I2C1) & I2C_SR1_AF) {
-            I2C_SR1(I2C1) &= ~I2C_SR1_AF;
-            i2c_send_stop(I2C1);
-            _i2c_ok = false;
-            return false;
-        }
-        if (--t == 0) { i2c_send_stop(I2C1); _i2c_ok = false; return false; }
-    }
-    (void)I2C_SR2(I2C1);
-
-    i2c_send_data(I2C1, data);
-
-    t = I2C_TIMEOUT;
-    while (!(I2C_SR1(I2C1) & (I2C_SR1_BTF | I2C_SR1_TxE)))
-        if (--t == 0) { i2c_send_stop(I2C1); _i2c_ok = false; return false; }
-
-    i2c_send_stop(I2C1);
-    _i2c_ok = true;
-    return true;
+    HAL_StatusTypeDef status =
+        HAL_I2C_Master_Transmit(&hi2c1,
+                                I2C_ADDR_8BIT(_addr),
+                                &data, 1,
+                                I2C_TIMEOUT_MS);
+    _i2c_ok = (status == HAL_OK);
+    return _i2c_ok;
 }
 
 /* ── EN strobe ───────────────────────────────────────────────────────────── */
 void HD44780_PCF8574::lcd_pulse_enable(uint8_t data)
 {
     i2c_write_byte(data | LCD_EN);
-    vTaskDelay(pdMS_TO_TICKS(5));
+    lcd_delay_ms(1);
     i2c_write_byte(data & ~LCD_EN);
-    vTaskDelay(pdMS_TO_TICKS(5));
+    lcd_delay_ms(1);
 }
 
 /* ── Send one nibble ─────────────────────────────────────────────────────── */
@@ -157,84 +160,49 @@ void HD44780_PCF8574::command(uint8_t cmd)
 bool HD44780_PCF8574::init(void)
 {
     i2c_setup();
-    vTaskDelay(pdMS_TO_TICKS(100));
+    lcd_delay_ms(100);
 
-    /* Probe */
+    /* Probe — just send backlight byte to check ACK */
     if (!i2c_write_byte(_backlight)) {
 #if (1 == DEBUG_ACTIVE)
         uSHELL_PRINTF("LCD: probe FAIL\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
+#endif
         return false;
     }
 
 #if (1 == DEBUG_ACTIVE)
     uSHELL_PRINTF("LCD: probe OK\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
+#endif
 
-    vTaskDelay(pdMS_TO_TICKS(10));
+    lcd_delay_ms(10);
 
-    /*
-     * Print expected byte sequence so you can match against oscilloscope.
-     * Each write4bits(0xXX) sends three I2C bytes to PCF8574:
-     *   [data|BL]  [data|BL|EN]  [data|BL]
-     * where BL=0x08, EN=0x04
-     *
-     * Reset step (0x30):  0x38  0x3C  0x38
-     * 4-bit switch (0x20): 0x28  0x2C  0x28
-     */
-#if (1 == DEBUG_ACTIVE)
-    uSHELL_PRINTF("LCD: --- expected I2C bytes ---\n");
-    dbg_byte("RS1 data: ", (uint8_t)(0x30 | _backlight));           /* 0x38 */
-    dbg_byte("RS1 EN+:  ", (uint8_t)(0x30 | _backlight | LCD_EN));  /* 0x3C */
-    dbg_byte("RS1 EN-:  ", (uint8_t)(0x30 | _backlight));           /* 0x38 */
-    dbg_byte("4BT data: ", (uint8_t)(0x20 | _backlight));           /* 0x28 */
-    dbg_byte("4BT EN+:  ", (uint8_t)(0x20 | _backlight | LCD_EN));  /* 0x2C */
-    dbg_byte("4BT EN-:  ", (uint8_t)(0x20 | _backlight));           /* 0x28 */
-#endif /*(1 == DEBUG_ACTIVE)*/
+    /* 3-step reset sequence */
+    lcd_write4bits(0x30); lcd_delay_ms(10);
+    lcd_write4bits(0x30); lcd_delay_ms(5);
+    lcd_write4bits(0x30); lcd_delay_ms(5);
 
-    /* 3-step reset */
-#if (1 == DEBUG_ACTIVE)
-    uSHELL_PRINTF("LCD: reset\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
-
-    lcd_write4bits(0x30); vTaskDelay(pdMS_TO_TICKS(10));
-    lcd_write4bits(0x30); vTaskDelay(pdMS_TO_TICKS(5));
-    lcd_write4bits(0x30); vTaskDelay(pdMS_TO_TICKS(5));
-
-    /* 4-bit mode */
-#if (1 == DEBUG_ACTIVE)
-    uSHELL_PRINTF("LCD: 4bit mode\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
-
+    /* Switch to 4-bit mode */
     lcd_write4bits(0x20);
-    vTaskDelay(pdMS_TO_TICKS(5));
+    lcd_delay_ms(5);
 
-    /* Function set: 4-bit, 2 line, 5x8 */
-#if (1 == DEBUG_ACTIVE)
-    uSHELL_PRINTF("LCD: func set\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
-
-    command(HD_FUNCTIONSET | HD_4BITMODE | HD_2LINE | HD_5x8DOTS); /* 0x28 */
-    vTaskDelay(pdMS_TO_TICKS(5));
+    /* Function set: 4-bit, 2-line, 5x8 */
+    command(HD_FUNCTIONSET | HD_4BITMODE | HD_2LINE | HD_5x8DOTS);
+    lcd_delay_ms(5);
 
     /* Display on, cursor off, blink off */
     _displayCtrl = HD_DISPLAY_ON;
-#if (1 == DEBUG_ACTIVE)    
-    uSHELL_PRINTF("LCD: display on\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
+    command(HD_DISPLAYCONTROL | _displayCtrl);
+    lcd_delay_ms(5);
 
-    command(HD_DISPLAYCONTROL | _displayCtrl);  /* 0x0C */
-    vTaskDelay(pdMS_TO_TICKS(5));
+    clear();
 
-    clear();  /* 0x01 */
+    /* Entry mode: left-to-right, no shift */
+    command(HD_ENTRYMODESET | HD_ENTRY_LEFT | HD_ENTRY_SHIFTDEC);
+    lcd_delay_ms(5);
 
-    /* Entry mode */
-    command(HD_ENTRYMODESET | HD_ENTRY_LEFT | HD_ENTRY_SHIFTDEC); /* 0x06 */
-    vTaskDelay(pdMS_TO_TICKS(5));
-
-#if (1 == DEBUG_ACTIVE)    
+#if (1 == DEBUG_ACTIVE)
     uSHELL_PRINTF("LCD: init done\n");
-#endif /*(1 == DEBUG_ACTIVE)*/
+#endif
 
     return _i2c_ok;
 }
@@ -242,13 +210,13 @@ bool HD44780_PCF8574::init(void)
 void HD44780_PCF8574::clear(void)
 {
     command(HD_CLEARDISPLAY);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    lcd_delay_ms(10);
 }
 
 void HD44780_PCF8574::home(void)
 {
     command(HD_RETURNHOME);
-    vTaskDelay(pdMS_TO_TICKS(10));
+    lcd_delay_ms(10);
 }
 
 void HD44780_PCF8574::setCursor(uint8_t col, uint8_t row)

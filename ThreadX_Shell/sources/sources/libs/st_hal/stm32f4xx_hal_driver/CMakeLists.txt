@@ -4,12 +4,15 @@ add_library(stm32f4xx_hal STATIC
     Src/stm32f4xx_hal_rcc.c
     Src/stm32f4xx_hal_rcc_ex.c
     Src/stm32f4xx_hal_gpio.c
-    Src/stm32f4xx_hal_dma.c
+    Src/stm32f4xx_hal_dma.c         
+    Src/stm32f4xx_hal_dma_ex.c      
+    Src/stm32f4xx_hal_flash.c       
+    Src/stm32f4xx_hal_flash_ex.c    
     Src/stm32f4xx_hal_uart.c
+    Src/stm32f4xx_hal_i2c.c       
     Src/stm32f4xx_hal_pwr.c
     Src/stm32f4xx_hal_pwr_ex.c
 )
-
 target_include_directories(stm32f4xx_hal PUBLIC
     Inc
 )

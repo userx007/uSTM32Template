@@ -15,7 +15,7 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        ${LIBOPENCM3_LIB}
-        freertos
+        stm32f4xx_hal
+        threadx
         ushell_core_config
 )

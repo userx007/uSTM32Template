@@ -42,7 +42,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_USART1_CLK_ENABLE();
 
-    GPIO_InitTypeDef gpio = {0};
+    GPIO_InitTypeDef gpio = {};
 
     /* TX – alternate function push-pull */
     gpio.Pin   = GPIO_PIN_9;
@@ -63,7 +63,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_USART1_CLK_ENABLE();
 
-    GPIO_InitTypeDef gpio = {0};
+    GPIO_InitTypeDef gpio = {};
     gpio.Pin       = GPIO_PIN_9 | GPIO_PIN_10;
     gpio.Mode      = GPIO_MODE_AF_PP;
     gpio.Pull      = GPIO_NOPULL;
