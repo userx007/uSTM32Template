@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "main_app",
+    "uart_hal",
     "ushell_usercode",
     "ushell/ushell_config",
     "ushell/ushell_logger",
@@ -9,6 +10,15 @@ members = [
     "ushell/ushell2"
 ]
 resolver = "2"
+
+# [workspace.dependencies]
+# heapless       = "0.9.1"          # ← pin to an exact minor if needed, e.g. "=0.8.0"
+# stm32f4xx-hal  = { version = "0.21", features = ["stm32f411"] }
+# cortex-m       = "0.7"
+# cortex-m-rt    = "0.7"
+# panic-halt     = "0.2"
+# rtic           = { version = "2", features = ["thumbv7-backend"] }
+
 
 [profile.dev]
 debug = 2           # Full debug while developing

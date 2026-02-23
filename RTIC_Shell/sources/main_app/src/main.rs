@@ -1,7 +1,11 @@
 #![no_std]
 #![no_main]
 
-static LED_TOGGLE_COUNT: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
+// ---------------------------------------------------------------------------
+// Application-level LED toggle counter (business logic, stays here)
+// ---------------------------------------------------------------------------
+static LED_TOGGLE_COUNT: core::sync::atomic::AtomicU32 =
+    core::sync::atomic::AtomicU32::new(0);
 
 use panic_halt as _;
 use rtic::app;
@@ -14,247 +18,190 @@ use stm32f4xx_hal::{
 };
 use heapless::{Deque, spsc::Queue, String};
 
+// Shell plumbing
 use ushell_config::*;
 use ushell_dispatcher::{generate_commands_dispatcher, generate_shortcuts_dispatcher};
 use ushell_usercode::commands as uc;
 use ushell_usercode::shortcuts as us;
 
+// Logger
 use ushell_logger::{log_simple, log_info, log_error};
 use ushell_logger::{init_logger, LogLevel, LoggerConfig};
 
-// Import the shell components from ushell_input
-// NOTE: Make sure ushell2 is compiled WITHOUT the "async" feature!
+// Shell input components
 use ushell_input::input::parser::InputParser;
 use ushell_input::input::key_reader::embedded::AnsiKeyParser;
 use ushell_input::input::key_reader::Key;
 use ushell_input::input::renderer::CallbackWriter;
 
-// Configuration constants
-const UART_RX_QUEUE_SIZE: usize = 128;
-const UART_TX_BUFFER_SIZE: usize = 512;
+// ---------------------------------------------------------------------------
+// UART HAL — all UART concerns live here
+// ---------------------------------------------------------------------------
+use uart_hal::{
+    // Size constants used by RTIC shared-struct type parameters
+    RX_QUEUE_SIZE,
+    TX_BUFFER_SIZE,
+    // Concrete HAL types (saves main from spelling out long paths)
+    UartTx,
+    UartRx,
+    // Runtime helpers
+    write_bytes,
+    flush_noop,
+    handle_tx_ready,
+    init_uart_globals,
+    // Global fmt::Write instance for the logger
+    LOGGER_WRITER,
+    // Shell ↔ queue bridge
+    RxQueueReader,
+};
 
+// ---------------------------------------------------------------------------
+// Code-generated shell dispatchers
+// ---------------------------------------------------------------------------
 generate_commands_dispatcher! {
     mod commands;
-    hexstr_size = crate::MAX_HEXSTR_LEN;
+    hexstr_size       = crate::MAX_HEXSTR_LEN;
     error_buffer_size = crate::ERROR_BUFFER_SIZE;
-    path = "../ushell_usercode/src/commands.cfg"
+    path              = "../ushell_usercode/src/commands.cfg"
 }
 
 generate_shortcuts_dispatcher! {
     mod shortcuts;
     error_buffer_size = crate::ERROR_BUFFER_SIZE;
-    path = "../ushell_usercode/src/shortcuts.cfg"
+    path              = "../ushell_usercode/src/shortcuts.cfg"
 }
 
-type UartTx = stm32f4xx_hal::serial::Tx<pac::USART2>;
-type UartRx = stm32f4xx_hal::serial::Rx<pac::USART2>;
-
-// Global UART writer for logger
-static mut GLOBAL_WRITER: UartWriterRtic = UartWriterRtic;
-
-// Global storage for UART TX resource
-struct GlobalUartResources {
-    tx_buffer: core::cell::UnsafeCell<Option<&'static mut Deque<u8, UART_TX_BUFFER_SIZE>>>,
-    uart_tx: core::cell::UnsafeCell<Option<&'static mut UartTx>>,
-}
-
-unsafe impl Sync for GlobalUartResources {}
-
-static mut GLOBAL_UART: GlobalUartResources = GlobalUartResources {
-    tx_buffer: core::cell::UnsafeCell::new(None),
-    uart_tx: core::cell::UnsafeCell::new(None),
-};
-
-// ============================================================================
-// UART Writer Functions (must be function pointers, not closures!)
-// ============================================================================
-
-fn uart_write_bytes(bytes: &[u8]) {
-    unsafe {
-        let tx_buffer_ptr = core::ptr::addr_of!(GLOBAL_UART.tx_buffer);
-        let uart_tx_ptr = core::ptr::addr_of!(GLOBAL_UART.uart_tx);
-        
-        if let Some(tx_buf) = (*(*tx_buffer_ptr).get()).as_mut() {
-            if let Some(uart_tx) = (*(*uart_tx_ptr).get()).as_mut() {
-                for &byte in bytes {
-                    if tx_buf.push_back(byte).is_err() {
-                        break;
-                    }
-                }
-                uart_tx.listen();
-            }
-        }
-    }
-}
-
-fn uart_flush_noop() {
-    // No-op flush - handled by interrupt
-}
-
+// ---------------------------------------------------------------------------
+// RTIC application
+// ---------------------------------------------------------------------------
 #[app(device = stm32f4xx_hal::pac, peripherals = true, dispatchers = [EXTI0])]
 mod app {
     use super::*;
 
+    // ---- Shared resources (touched by multiple tasks / ISRs) --------------
     #[shared]
     struct Shared {
-        uart_tx: UartTx,
-        tx_buffer: Deque<u8, UART_TX_BUFFER_SIZE>,
-        rx_queue: Queue<u8, UART_RX_QUEUE_SIZE>,
-        shell_pending: bool,  // Track if shell_task is already spawned/pending
+        uart_tx:      UartTx,
+        tx_buffer:    Deque<u8, TX_BUFFER_SIZE>,
+        rx_queue:     Queue<u8, RX_QUEUE_SIZE>,
+        shell_pending: bool, // prevents redundant shell_task::spawn() calls
     }
 
+    // ---- Local resources (single owner) -----------------------------------
     #[local]
     struct Local {
-        uart_rx: UartRx,
-        led: Pin<'C', 13, Output<PushPull>>,
+        uart_rx:     UartRx,
+        led:         Pin<'C', 13, Output<PushPull>>,
         blink_timer: CounterHz<pac::TIM2>,
-        shell: ShellCtx,
+        shell:       ShellCtx,
     }
 
+    // -----------------------------------------------------------------------
+    // init — hardware setup only
+    // -----------------------------------------------------------------------
     #[init]
     fn init(ctx: init::Context) -> (Shared, Local) {
         let dp = ctx.device;
 
-        // Setup clocks - 100 MHz sysclk
-        let rcc = dp.RCC.constrain();
+        // Clocks: 100 MHz sysclk
+        let rcc    = dp.RCC.constrain();
         let clocks = rcc.cfgr
             .sysclk(100.MHz())
             .pclk1(50.MHz())
             .pclk2(100.MHz())
             .freeze();
 
-        // Setup LED pin (PC13)
+        // LED on PC13
         let gpioc = dp.GPIOC.split();
-        let led = gpioc.pc13.into_push_pull_output();
+        let led   = gpioc.pc13.into_push_pull_output();
 
-        // Setup UART2 pins (PA2=TX, PA3=RX)
-        let gpioa = dp.GPIOA.split();
-        let tx_pin = gpioa.pa2.into_alternate();
-        let rx_pin = gpioa.pa3.into_alternate();
-
-        // Configure UART2 - 115200 baud, 8N1
-        let serial_config = SerialConfig::default()
-            .baudrate(115200.bps());
-
+        // USART2 — PA2 = TX, PA3 = RX @ 115200 8N1
+        let gpioa  = dp.GPIOA.split();
         let serial = Serial::new(
             dp.USART2,
-            (tx_pin, rx_pin),
-            serial_config,
+            (gpioa.pa2.into_alternate(), gpioa.pa3.into_alternate()),
+            SerialConfig::default().baudrate(115200.bps()),
             &clocks,
         ).unwrap();
 
-        // Split serial before configuring interrupts
         let (uart_tx, mut uart_rx) = serial.split();
-        
-        // Enable UART RX interrupt
-        uart_rx.listen();
+        uart_rx.listen(); // arm RX interrupt
 
-        // Setup LED blink timer (TIM2) - 1 Hz
+        // LED blink timer — 1 Hz
         let mut blink_timer = Timer::new(dp.TIM2, &clocks).counter_hz();
         blink_timer.start(1.Hz()).unwrap();
         blink_timer.listen(stm32f4xx_hal::timer::Event::Update);
 
-        // Create TX buffer and RX queue
-        let tx_buffer: Deque<u8, UART_TX_BUFFER_SIZE> = Deque::new();
-        let rx_queue: Queue<u8, UART_RX_QUEUE_SIZE> = Queue::new();
+        // Allocate RTIC shared buffers
+        let tx_buffer: Deque<u8, TX_BUFFER_SIZE> = Deque::new();
+        let rx_queue:  Queue<u8, RX_QUEUE_SIZE>  = Queue::new();
 
-        // Initialize the global logger with static UART writer
+        // Wire logger to the UART writer.
+        // NOTE: write_bytes is a no-op until init_uart_globals is called from
+        // shell_task, so the first log lines are intentionally deferred.
         unsafe {
             init_logger(
-                LoggerConfig {
-                    color_entire_line: true,
-                    min_level: LogLevel::Debug,
-                },
-                &mut *core::ptr::addr_of_mut!(GLOBAL_WRITER),
+                LoggerConfig { color_entire_line: true, min_level: LogLevel::Debug },
+                &mut *core::ptr::addr_of_mut!(LOGGER_WRITER),
             );
         }
 
-        // Note: Logging from init() won't work yet because global UART 
-        // resources aren't set up. They'll be initialized in shell_task.
-
-        // Create shell context
-        let shell = ShellCtx::new();
-
-        // Spawn shell_task once to initialize globals and print welcome messages
+        // Spawn shell_task once so it can run its one-time UART global init
         shell_task::spawn().ok();
 
         (
-            Shared {
-                uart_tx,
-                tx_buffer,
-                rx_queue,
-                shell_pending: true,  // Task is pending since we just spawned it
-            },
-            Local {
-                uart_rx,
-                led,
-                blink_timer,
-                shell,
-            },
+            Shared { uart_tx, tx_buffer, rx_queue, shell_pending: true },
+            Local  { uart_rx, led, blink_timer, shell: ShellCtx::new() },
         )
     }
 
-    // ========================================================================
-    // USART2 Interrupt Handler - Feeds RX queue and spawns shell task
-    // ========================================================================
-    #[task(binds = USART2, local = [uart_rx], shared = [uart_tx, tx_buffer, rx_queue, shell_pending], priority = 3)]
+    // -----------------------------------------------------------------------
+    // USART2 ISR — RX ingestion + TX draining
+    // -----------------------------------------------------------------------
+    #[task(
+        binds = USART2,
+        local  = [uart_rx],
+        shared = [uart_tx, tx_buffer, rx_queue, shell_pending],
+        priority = 3,
+    )]
     fn usart2_isr(mut ctx: usart2_isr::Context) {
-        let uart_rx = ctx.local.uart_rx;
-
-        // Handle RX: Read received byte and store in queue
-        if uart_rx.is_rx_not_empty() {
-            match uart_rx.read() {
+        // --- RX path -------------------------------------------------------
+        if ctx.local.uart_rx.is_rx_not_empty() {
+            match ctx.local.uart_rx.read() {
                 Ok(byte) => {
-                    // Store in RX queue
-                    ctx.shared.rx_queue.lock(|rx_queue| {
-                        let _ = rx_queue.enqueue(byte);
-                    });
-                    
-                    // Only spawn shell_task if not already pending
-                    // This prevents wasteful spawn() calls when user types fast
+                    ctx.shared.rx_queue.lock(|q| { let _ = q.enqueue(byte); });
+
+                    // Spawn the shell task only when it is not already queued.
                     ctx.shared.shell_pending.lock(|pending| {
                         if !*pending {
                             *pending = true;
                             shell_task::spawn().ok();
                         }
-                        // else: task is already pending, it will process this byte
                     });
                 }
-                Err(_) => {
-                    // Handle UART error
-                }
+                Err(_) => { /* framing / overrun errors — ignore or count */ }
             }
         }
 
-        // Handle TX: Send byte from buffer if available
+        // --- TX path (delegated entirely to uart_hal) ----------------------
         ctx.shared.uart_tx.lock(|uart_tx| {
-            if uart_tx.is_tx_empty() {
-                ctx.shared.tx_buffer.lock(|tx_buf| {
-                    match tx_buf.pop_front() {
-                        Some(byte) => {
-                            // Send byte
-                            let _ = uart_tx.write(byte);
-                            // Keep TX interrupt enabled
-                            uart_tx.listen();
-                        }
-                        None => {
-                            // No more data, disable TX interrupt
-                            uart_tx.unlisten();
-                        }
-                    }
-                });
-            }
+            ctx.shared.tx_buffer.lock(|tx_buf| {
+                handle_tx_ready(uart_tx, tx_buf);
+            });
         });
     }
 
-    // ========================================================================
-    // LED Blink Task - Simple toggle every timer tick
-    // ========================================================================
-    #[task(binds = TIM2, local = [led, blink_timer, state: bool = false], priority = 2)]
+    // -----------------------------------------------------------------------
+    // TIM2 ISR — LED blink (business logic)
+    // -----------------------------------------------------------------------
+    #[task(
+        binds = TIM2,
+        local  = [led, blink_timer, state: bool = false],
+        priority = 2,
+    )]
     fn led_blink(ctx: led_blink::Context) {
         ctx.local.blink_timer.clear_flags(TimerFlag::Update);
-            
-        LED_TOGGLE_COUNT.fetch_add(1, core::sync::atomic::Ordering::Relaxed);            
+        LED_TOGGLE_COUNT.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
 
         if *ctx.local.state {
             ctx.local.led.set_high();
@@ -263,59 +210,69 @@ mod app {
             ctx.local.led.set_low();
             log_info!("LED OFF");
         }
-        
         *ctx.local.state = !*ctx.local.state;
     }
 
-    // ========================================================================
-    // Shell Processing Task - Processes one step and exits
-    // ========================================================================
-    #[task(shared = [uart_tx, tx_buffer, rx_queue, shell_pending], local = [shell, initialized: bool = false], priority = 1)]
+    // -----------------------------------------------------------------------
+    // Shell task — one-time UART global init, then byte-by-byte processing
+    // -----------------------------------------------------------------------
+    #[task(
+        shared = [uart_tx, tx_buffer, rx_queue, shell_pending],
+        local  = [shell, initialized: bool = false],
+        priority = 1,
+    )]
     async fn shell_task(mut ctx: shell_task::Context) {
-        // One-time initialization of global UART resources
+        // --- One-time global init ------------------------------------------
+        // Wire the RTIC-owned tx_buffer and uart_tx into uart_hal's global
+        // state so that write_bytes (and the logger) can send bytes without
+        // holding any RTIC lock at call-site.
+        //
+        // Safety: RTIC shared resources are pinned in static storage for the
+        // lifetime of the programme. transmute extends the borrow to 'static,
+        // which is sound here because we run this block exactly once and do
+        // not move or drop the resources afterwards.
         if !*ctx.local.initialized {
             unsafe {
                 ctx.shared.tx_buffer.lock(|tx_buf| {
-                    let tx_buffer_ptr = core::ptr::addr_of_mut!(GLOBAL_UART.tx_buffer);
-                    *(*tx_buffer_ptr).get() = Some(core::mem::transmute(tx_buf));
-                });
-                ctx.shared.uart_tx.lock(|uart_tx| {
-                    let uart_tx_ptr = core::ptr::addr_of_mut!(GLOBAL_UART.uart_tx);
-                    *(*uart_tx_ptr).get() = Some(core::mem::transmute(uart_tx));
+                    ctx.shared.uart_tx.lock(|uart_tx| {
+                        init_uart_globals(
+                            core::mem::transmute::<
+                                &mut Deque<u8, TX_BUFFER_SIZE>,
+                                &'static mut Deque<u8, TX_BUFFER_SIZE>,
+                            >(tx_buf),
+                            core::mem::transmute::<&mut UartTx, &'static mut UartTx>(uart_tx),
+                        );
+                    });
                 });
             }
-            
-            // Now logging will work - print welcome messages
+
+            // Logger is now operational — emit welcome banner
             log_simple!("System initialized");
             log_simple!("UART configured with step-based shell");
             log_simple!("Starting step-based shell...");
             log_simple!("Type '##' for available commands");
-            
+
             *ctx.local.initialized = true;
         }
 
-        // Process all available bytes in the queue
+        // --- Process all queued RX bytes -----------------------------------
         ctx.shared.rx_queue.lock(|rx_queue| {
-            let mut reader = RticQueueReader { queue: rx_queue };
-
-            // Use reader's is_empty() method
+            let mut reader = RxQueueReader::new(rx_queue);
             while !reader.is_empty() {
-                let keep_running = ctx.local.shell.step(&mut reader);
-
-                if !keep_running {
+                if !ctx.local.shell.step(&mut reader) {
                     log_info!("Shell exited");
                     break;
                 }
             }
         });
 
-        // Clear the pending flag - we've processed all available bytes
-        // This allows the ISR to spawn us again when new bytes arrive
-        ctx.shared.shell_pending.lock(|pending| {
-            *pending = false;
-        });
+        // Release the pending flag so the ISR may re-spawn us on new input
+        ctx.shared.shell_pending.lock(|pending| { *pending = false; });
     }
 
+    // -----------------------------------------------------------------------
+    // Idle
+    // -----------------------------------------------------------------------
     #[idle]
     fn idle(_: idle::Context) -> ! {
         loop {
@@ -324,32 +281,31 @@ mod app {
     }
 }
 
-// ============================================================================
-// Shell Context - Wraps the shell parser to process one step at a time
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Shell context — wraps InputParser for step-based processing
+// (shell concern, not UART concern — stays in main.rs)
+// ---------------------------------------------------------------------------
 
 struct ShellCtx {
     parser: InputParser<
         'static,
         CallbackWriter<fn(&[u8]), fn()>,
-        { commands::NUM_COMMANDS },        // NAC - Number of Autocomplete Candidates
-        { commands::MAX_FUNCTION_NAME_LEN }, // FNL - Function Name Length
-        { INPUT_MAX_LEN },                   // IML - Input Maximum Length
-        { HISTORY_TOTAL_CAPACITY },          // HTC - History Total Capacity
+        { commands::NUM_COMMANDS },          // NAC — autocomplete candidates
+        { commands::MAX_FUNCTION_NAME_LEN }, // FNL — function name length
+        { INPUT_MAX_LEN },                   // IML — input max length
+        { HISTORY_TOTAL_CAPACITY },          // HTC — history buffer capacity
     >,
-    key_parser: AnsiKeyParser,
+    key_parser:  AnsiKeyParser,
     pending_key: Option<Key>,
 }
 
 impl ShellCtx {
     fn new() -> Self {
-        // Create the writer for the parser using FUNCTION POINTERS
+        // write_bytes / flush_noop are plain fn-pointers — no closure captures.
         let writer = CallbackWriter::new(
-            uart_write_bytes as fn(&[u8]),
-            uart_flush_noop as fn(),
+            write_bytes as fn(&[u8]),
+            flush_noop  as fn(),
         );
-
-        // Create the parser with all required configuration
         let parser = InputParser::new(
             writer,
             commands::get_commands(),
@@ -357,31 +313,26 @@ impl ShellCtx {
             shortcuts::get_shortcuts(),
             PROMPT,
         );
-
-        Self {
-            parser,
-            key_parser: AnsiKeyParser::new(),
-            pending_key: None,
-        }
+        Self { parser, key_parser: AnsiKeyParser::new(), pending_key: None }
     }
 
-    fn step(&mut self, reader: &mut RticQueueReader) -> bool {
-        // Read a byte if available
+    /// Process one byte from `reader` and advance the parser state machine.
+    /// Returns `false` when the shell signals it should stop running.
+    fn step(&mut self, reader: &mut RxQueueReader) -> bool {
+        // Feed one raw byte through the ANSI key decoder
         if let Some(byte) = reader.read_byte() {
-            // Parse ANSI escape sequences into keys
             if let Some(key) = self.key_parser.parse_byte(byte) {
                 self.pending_key = Some(key);
             }
         }
 
-        // Process the input with the parser
+        // Advance the parser; dispatch commands when a line is complete
         self.parser.parse_input(
             || self.pending_key.take(),
-            |s: &str| uart_write_bytes(s.as_bytes()),
+            |s: &str| write_bytes(s.as_bytes()),
             |input| {
-                // Execute command or shortcut using error buffer
                 let mut error_buffer: String<ERROR_BUFFER_SIZE> = String::new();
-                
+
                 let result = if shortcuts::is_supported_shortcut(input.as_str()) {
                     shortcuts::dispatch(input.as_str(), &mut error_buffer)
                 } else {
@@ -389,41 +340,10 @@ impl ShellCtx {
                 };
 
                 match result {
-                    Ok(_) => log_info!("Success"),
+                    Ok(_)  => log_info!("Success"),
                     Err(e) => log_error!("Error: {}", e),
                 }
             },
         )
-    }
-}
-
-// ============================================================================
-// RTIC Queue Reader - Simple wrapper for the RX queue
-// ============================================================================
-
-struct RticQueueReader<'a> {
-    queue: &'a mut Queue<u8, UART_RX_QUEUE_SIZE>,
-}
-
-impl<'a> RticQueueReader<'a> {
-    fn read_byte(&mut self) -> Option<u8> {
-        self.queue.dequeue()
-    }
-    
-    fn is_empty(&self) -> bool {
-        self.queue.is_empty()
-    }
-}
-
-// ============================================================================
-// UART Writer for Logger Integration
-// ============================================================================
-
-pub struct UartWriterRtic;
-
-impl core::fmt::Write for UartWriterRtic {
-    fn write_str(&mut self, s: &str) -> core::fmt::Result {
-        uart_write_bytes(s.as_bytes());
-        Ok(())
     }
 }

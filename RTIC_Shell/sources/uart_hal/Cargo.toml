@@ -1,0 +1,13 @@
+[package]
+name    = "uart_hal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+stm32f4xx-hal = { version = "0.21", features = ["stm32f411"] }
+heapless       = "0.9.1"
+
+[profile.release]
+opt-level = "z"
+lto       = true
+codegen-units = 1

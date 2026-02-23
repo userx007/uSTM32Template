@@ -485,6 +485,7 @@ dependencies = [
  "rtic",
  "rtic-monotonics",
  "stm32f4xx-hal",
+ "uart_hal",
  "ushell2",
  "ushell_config",
  "ushell_dispatcher",
@@ -556,6 +557,14 @@ name = "time-core"
 version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7694e1cfe791f8d31026952abf09c69ca6f6fa4e1a1229e18988f06a04a12dca"
+
+[[package]]
+name = "uart_hal"
+version = "0.1.0"
+dependencies = [
+ "heapless",
+ "stm32f4xx-hal",
+]
 
 [[package]]
 name = "unicode-ident"
