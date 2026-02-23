@@ -9,9 +9,16 @@ int _lseek(int fd, int ptr, int dir)      { return 0; }
 int _read(int fd, char *ptr, int len)     { return 0; }
 int _getpid(void)                         { return 1; }
 int _kill(int pid, int sig)               { errno = EINVAL; return -1; }
+void _init(void) {}
 
 /* _write: redirect to UART or semihosting here if you want printf */
-int _write(int fd, char *ptr, int len)    { return len; }
+// syscalls.c
+int _write(int fd, char *ptr, int len)
+{
+    (void)fd;
+    for (int i = 0; i < len; i++) uart_putchar(ptr[i]);
+    return len;
+}
 
 /* _sbrk: heap management – required if you use malloc/new */
 extern char _end;       /* defined by linker script */

@@ -29,6 +29,7 @@ add_subdirectory(sources)
 add_executable(${PROJECT_NAME}.elf)
 
 target_link_libraries(${PROJECT_NAME}.elf
+    threadx_port   
     user_main
     ushell_core
     ushell_core_utils

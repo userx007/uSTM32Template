@@ -1,11 +1,44 @@
 #include "tx_api.h"
-#include <stdio.h>
+#include "uart_access.h"
 
+#if defined(STM32F4)
+#  include "stm32f4xx_hal.h"
+#elif defined(STM32F1)
+#  include "stm32f1xx_hal.h"
+#endif
+
+/*
+ * Onboard LED pinout:
+ *   STM32F411CEU6 (Black Pill) : PC13 — active LOW
+ *   STM32F103C8T6 (Blue Pill)  : PC13 — active LOW
+ *
+ * Adjust GPIO_PIN / GPIOx below if your board differs.
+ */
 #define LED_GREEN 0
 
-void toggle_led( int led );
+/* ── LED init ────────────────────────────────────────────────────────────── */
+static void led_init(void)
+{
+    __HAL_RCC_GPIOC_CLK_ENABLE();
 
-/* Thread control blocks (can also be dynamically allocated) */
+    GPIO_InitTypeDef gpio = {};
+    gpio.Pin   = GPIO_PIN_13;
+    gpio.Mode  = GPIO_MODE_OUTPUT_PP;
+    gpio.Pull  = GPIO_NOPULL;
+    gpio.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOC, &gpio);
+
+    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET); /* LED off (active LOW) */
+}
+
+/* ── LED toggle (called from led_thread) ─────────────────────────────────── */
+void toggle_led(int led)
+{
+    (void)led; /* only one LED — extend with a switch if you add more */
+    HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
+}
+
+/* ── Thread control blocks ───────────────────────────────────────────────── */
 static TX_THREAD led_thread;
 static TX_THREAD uart_thread;
 
@@ -31,15 +64,18 @@ static void uart_thread_entry(ULONG initial_input)
     UINT tick = 0;
     while (1)
     {
-        printf("Tick: %u\r\n", tick++);
-        tx_thread_sleep(100);  /* 1 second */
+        uart_printf("Tick: %d\r\n", tick++);
+        tx_thread_sleep(100);  /* 100 ticks = 1 s at 100 Hz */
     }
 }
 
-/* --- Kernel entry point (called by tx_kernel_enter) --- */
-
+/* ── Kernel entry point ──────────────────────────────────────────────────── */
 void tx_application_define(void *first_unused_memory)
 {
+    (void)first_unused_memory;
+
+    led_init();
+
     UINT status;
 
     /* Create LED thread: priority 10, preemption-threshold 10 (disabled),

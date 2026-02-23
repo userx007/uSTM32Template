@@ -1,14 +1,17 @@
+cmake_minimum_required(VERSION 3.3)
+project(user_main)
 
-# --- Application ---
-add_executable(${PROJECT_NAME}
-    src/main.c
-    src/app_threadx.c
+add_library(${PROJECT_NAME}
+    OBJECT
+        src/main.c
+        src/app_threadx.c
 
 )
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         threadx
+        uart_access
 )
 
 target_include_directories(${PROJECT_NAME} 
