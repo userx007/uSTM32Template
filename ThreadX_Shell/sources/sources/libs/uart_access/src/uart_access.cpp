@@ -1,10 +1,14 @@
 #include "uart_access.h"
-#include "libopencm3/stm32/rcc.h"
-#include "libopencm3/stm32/gpio.h"
-#include "libopencm3/stm32/usart.h"
+
+#if defined(STM32F1)
+#  include "stm32f1xx_hal.h"
+#elif defined(STM32F4)
+#  include "stm32f4xx_hal.h"
+#else
+#  error "Define STM32F1 or STM32F4 in your build system"
+#endif
 
 #include <stdarg.h>
-#include <stdint.h>
 
 /* ================================================
             private interfaces declaration
@@ -16,70 +20,91 @@ static void print_int_to_buf(char *buf, int *pos, int maxlen, int value, int wid
 static void print_hex_to_buf(char *buf, int *pos, int maxlen, unsigned int value, int width, char pad, int left_align);
 
 /* ================================================
-            public interfaces ddefinition
+            module-level state
 ==================================================*/
 
+static UART_HandleTypeDef huart1;
+
+/* ================================================
+            HAL MSP hook  (GPIO + clock wiring)
+==================================================*/
+
+void HAL_UART_MspInit(UART_HandleTypeDef *huart)
+{
+    if (huart->Instance != USART1)
+        return;
+
+#if defined(STM32F1)
+    /*
+     * STM32F1: USART1 TX=PA9, RX=PA10
+     * GPIOA and USART1 clocks
+     */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_USART1_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio = {0};
+
+    /* TX – alternate function push-pull */
+    gpio.Pin   = GPIO_PIN_9;
+    gpio.Mode  = GPIO_MODE_AF_PP;
+    gpio.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOA, &gpio);
+
+    /* RX – floating input */
+    gpio.Pin  = GPIO_PIN_10;
+    gpio.Mode = GPIO_MODE_INPUT;
+    gpio.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &gpio);
+
+#elif defined(STM32F4)
+    /*
+     * STM32F4: USART1 TX=PA9 AF7, RX=PA10 AF7
+     */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_USART1_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpio = {0};
+    gpio.Pin       = GPIO_PIN_9 | GPIO_PIN_10;
+    gpio.Mode      = GPIO_MODE_AF_PP;
+    gpio.Pull      = GPIO_NOPULL;
+    gpio.Speed     = GPIO_SPEED_FREQ_HIGH;
+    gpio.Alternate = GPIO_AF7_USART1;
+    HAL_GPIO_Init(GPIOA, &gpio);
+#endif
+}
+
+/* ================================================
+            public interfaces definition
+==================================================*/
 
 /*--------------------------------------------------*/
 void uart_setup(void)
 {
-    /* Enable clocks for USART1 and GPIOA */
-    rcc_periph_clock_enable(RCC_USART1);
-    rcc_periph_clock_enable(RCC_GPIOA);
+    huart1.Instance          = USART1;
+    huart1.Init.BaudRate     = 115200;
+    huart1.Init.WordLength   = UART_WORDLENGTH_8B;
+    huart1.Init.StopBits     = UART_STOPBITS_1;
+    huart1.Init.Parity       = UART_PARITY_NONE;
+    huart1.Init.Mode         = UART_MODE_TX_RX;
+    huart1.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+    huart1.Init.OverSampling = UART_OVERSAMPLING_16;
 
-#if defined(STM32F1)
-    gpio_set_mode(GPIOA, GPIO_MODE_OUTPUT_50_MHZ,
-                  GPIO_CNF_OUTPUT_ALTFN_PUSHPULL, GPIO_USART1_TX);
-    gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
-                  GPIO_CNF_INPUT_FLOAT, GPIO_USART1_RX);
-#endif /*defined(STM32F1)*/
-
-#if defined(STM32F4)
-/*
-    STM32F411 USART1 Configuration:
-    USART1 TX: PA9 (Alternate Function 7)
-    USART1 RX: PA10 (Alternate Function 7)
-*/
-    
-    /* Configure PA9 as USART1_TX - Alternate Function */
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO9);
-    gpio_set_af(GPIOA, GPIO_AF7, GPIO9);  /* AF7 is USART1 for STM32F411 */
-    gpio_set_output_options(GPIOA, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO9);
-    
-    /* Configure PA10 as USART1_RX - Alternate Function */
-    gpio_mode_setup(GPIOA, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO10);
-    gpio_set_af(GPIOA, GPIO_AF7, GPIO10);  /* AF7 is USART1 for STM32F411 */
-#endif /*defined(STM32F4)*/
-
-    /* Setup USART1 parameters */
-    usart_set_baudrate(USART1, 115200);
-    usart_set_databits(USART1, 8);
-    usart_set_stopbits(USART1, USART_STOPBITS_1);
-    usart_set_mode(USART1, USART_MODE_TX_RX);
-    usart_set_parity(USART1, USART_PARITY_NONE);
-    usart_set_flow_control(USART1, USART_FLOWCONTROL_NONE);
-
-    /* Enable USART1 */
-    usart_enable(USART1);
+    HAL_UART_Init(&huart1);
 }
-
-
 
 /*--------------------------------------------------*/
 int uart_getchar(void)
 {
-    while (!(USART_SR(USART1) & USART_SR_RXNE)); // Wait for data
-    return usart_recv(USART1);
+    uint8_t byte;
+    HAL_UART_Receive(&huart1, &byte, 1, HAL_MAX_DELAY);
+    return (int)byte;
 }
-
-
 
 /*--------------------------------------------------*/
 void uart_putchar(char c)
 {
-    usart_send_blocking(USART1, c);
+    HAL_UART_Transmit(&huart1, (uint8_t *)&c, 1, HAL_MAX_DELAY);
 }
-
 
 /*--------------------------------------------------*/
 int uart_printf(const char *fmt, ...)
@@ -89,57 +114,32 @@ int uart_printf(const char *fmt, ...)
     while (*fmt) {
         if (*fmt == '%') {
             fmt++;
-            char pad = ' ';
-            int width = 0;
-            int left_align = 0;  // Flag for left alignment
-            
-            // Check for left alignment flag '-'
-            if (*fmt == '-') {
-                left_align = 1;
-                fmt++;
-            }
-            
-            // Check for zero padding
-            if (*fmt == '0') {
-                pad = '0';
-                fmt++;
-            }
-            
-            // Parse width
+            char pad      = ' ';
+            int  width    = 0;
+            int  left_align = 0;
+
+            if (*fmt == '-') { left_align = 1; fmt++; }
+            if (*fmt == '0') { pad = '0';      fmt++; }
+
             while (*fmt >= '0' && *fmt <= '9') {
                 width = width * 10 + (*fmt - '0');
                 fmt++;
             }
-            
+
             switch (*fmt) {
                 case 's': {
                     const char *s = va_arg(args, const char *);
                     int len = 0;
-                    const char *temp = s;
-                    
-                    // Calculate string length
-                    while (*temp++) len++;
-                    
-                    // Left-aligned: print string first, then padding
+                    const char *tmp = s;
+                    while (*tmp++) len++;
+
                     if (left_align) {
-                        temp = s;
-                        while (*temp) {
-                            uart_putchar(*temp++);
-                        }
-                        // Add padding on the right
-                        for (int i = len; i < width; i++) {
-                            uart_putchar(pad);
-                        }
-                    } 
-                    // Right-aligned: print padding first, then string
-                    else {
-                        // Add padding on the left
-                        for (int i = len; i < width; i++) {
-                            uart_putchar(pad);
-                        }
-                        while (*s) {
-                            uart_putchar(*s++);
-                        }
+                        tmp = s;
+                        while (*tmp) uart_putchar(*tmp++);
+                        for (int i = len; i < width; i++) uart_putchar(' ');
+                    } else {
+                        for (int i = len; i < width; i++) uart_putchar(pad);
+                        while (*s) uart_putchar(*s++);
                     }
                     break;
                 }
@@ -147,7 +147,7 @@ int uart_printf(const char *fmt, ...)
                     print_int(va_arg(args, int), width, pad, left_align);
                     break;
                 case 'x':
-                case 'X':                
+                case 'X':
                     print_hex(va_arg(args, unsigned int), width, pad, left_align);
                     break;
                 case 'c':
@@ -167,7 +167,6 @@ int uart_printf(const char *fmt, ...)
     return 0;
 }
 
-
 /*--------------------------------------------------*/
 int uart_snprintf(char *buf, int maxlen, const char *fmt, ...)
 {
@@ -178,57 +177,32 @@ int uart_snprintf(char *buf, int maxlen, const char *fmt, ...)
     while (*fmt && pos < maxlen - 1) {
         if (*fmt == '%') {
             fmt++;
-            char pad = ' ';
-            int width = 0;
-            int left_align = 0;  // Flag for left alignment
-            
-            // Check for left alignment flag '-'
-            if (*fmt == '-') {
-                left_align = 1;
-                fmt++;
-            }
-            
-            // Check for zero padding
-            if (*fmt == '0') {
-                pad = '0';
-                fmt++;
-            }
-            
-            // Parse width
+            char pad      = ' ';
+            int  width    = 0;
+            int  left_align = 0;
+
+            if (*fmt == '-') { left_align = 1; fmt++; }
+            if (*fmt == '0') { pad = '0';      fmt++; }
+
             while (*fmt >= '0' && *fmt <= '9') {
                 width = width * 10 + (*fmt - '0');
                 fmt++;
             }
-            
+
             switch (*fmt) {
                 case 's': {
                     const char *s = va_arg(args, const char *);
                     int len = 0;
-                    const char *temp = s;
-                    
-                    // Calculate string length
-                    while (*temp++) len++;
-                    
-                    // Left-aligned: print string first, then padding
+                    const char *tmp = s;
+                    while (*tmp++) len++;
+
                     if (left_align) {
-                        temp = s;
-                        while (*temp && pos < maxlen - 1) {
-                            buf[pos++] = *temp++;
-                        }
-                        // Add padding on the right
-                        for (int i = len; i < width && pos < maxlen - 1; i++) {
-                            buf[pos++] = pad;
-                        }
-                    } 
-                    // Right-aligned: print padding first, then string
-                    else {
-                        // Add padding on the left
-                        for (int i = len; i < width && pos < maxlen - 1; i++) {
-                            buf[pos++] = pad;
-                        }
-                        while (*s && pos < maxlen - 1) {
-                            buf[pos++] = *s++;
-                        }
+                        tmp = s;
+                        while (*tmp && pos < maxlen - 1) buf[pos++] = *tmp++;
+                        for (int i = len; i < width && pos < maxlen - 1; i++) buf[pos++] = ' ';
+                    } else {
+                        for (int i = len; i < width && pos < maxlen - 1; i++) buf[pos++] = pad;
+                        while (*s && pos < maxlen - 1) buf[pos++] = *s++;
                     }
                     break;
                 }
@@ -240,9 +214,7 @@ int uart_snprintf(char *buf, int maxlen, const char *fmt, ...)
                     print_hex_to_buf(buf, &pos, maxlen, va_arg(args, unsigned int), width, pad, left_align);
                     break;
                 case 'c':
-                    if (pos < maxlen - 1) {
-                        buf[pos++] = (char)va_arg(args, int);
-                    }
+                    if (pos < maxlen - 1) buf[pos++] = (char)va_arg(args, int);
                     break;
                 default:
                     if (pos < maxlen - 1) buf[pos++] = '%';
@@ -260,187 +232,99 @@ int uart_snprintf(char *buf, int maxlen, const char *fmt, ...)
     return pos;
 }
 
-
-
 /* ================================================
             private interfaces definition
 ==================================================*/
 
-
 /*--------------------------------------------------*/
 static void print_int(int value, int width, char pad, int left_align)
 {
-    char buffer[12];
-    int i = 0;
-    int is_negative = 0;
-    
-    if (value < 0) {
-        is_negative = 1;
-        value = -value;
-    }
-    
-    do {
-        buffer[i++] = '0' + (value % 10);
-        value /= 10;
-    } while (value);
-    
-    if (is_negative) {
-        buffer[i++] = '-';
-    }
-    
-    // Left-aligned: print number first, then padding
+    char buf[12];
+    int  i           = 0;
+    int  is_negative = (value < 0);
+
+    if (is_negative) value = -value;
+
+    do { buf[i++] = '0' + (value % 10); value /= 10; } while (value);
+    if (is_negative) buf[i++] = '-';
+
     if (left_align) {
-        for (int j = i - 1; j >= 0; j--) {
-            uart_putchar(buffer[j]);
-        }
-        for (int j = i; j < width; j++) {
-            uart_putchar(pad);
-        }
-    }
-    // Right-aligned: padding first, then number
-    else {
-        for (int j = i; j < width; j++) {
-            uart_putchar(pad);
-        }
-        for (int j = i - 1; j >= 0; j--) {
-            uart_putchar(buffer[j]);
-        }
+        for (int j = i - 1; j >= 0; j--) uart_putchar(buf[j]);
+        for (int j = i; j < width; j++)  uart_putchar(' ');
+    } else {
+        for (int j = i; j < width; j++)  uart_putchar(pad);
+        for (int j = i - 1; j >= 0; j--) uart_putchar(buf[j]);
     }
 }
-
-
 
 /*--------------------------------------------------*/
 static void print_hex(unsigned int value, int width, char pad, int left_align)
 {
-    const char *hex = "0123456789ABCDEF";
-    char buffer[8];
-    int i = 0;
-    
-    do {
-        buffer[i++] = hex[value & 0xF];
-        value >>= 4;
-    } while (value);
-    
-    // Left-aligned: 0x + number first, then padding
+    const char hex[] = "0123456789ABCDEF";
+    char buf[8];
+    int  i = 0;
+
+    do { buf[i++] = hex[value & 0xF]; value >>= 4; } while (value);
+
     if (left_align) {
-        uart_putchar('0');
-        uart_putchar('x');
-        for (int j = i - 1; j >= 0; j--) {
-            uart_putchar(buffer[j]);
-        }
-        for (int j = i + 2; j < width; j++) {
-            uart_putchar(pad);
-        }
-    }
-    // Right-aligned: padding first, then 0x + number
-    else {
-        for (int j = i + 2; j < width; j++) {
-            uart_putchar(pad);
-        }
-        uart_putchar('0');
-        uart_putchar('x');
-        for (int j = i - 1; j >= 0; j--) {
-            uart_putchar(buffer[j]);
-        }
+        uart_putchar('0'); uart_putchar('x');
+        for (int j = i - 1; j >= 0; j--) uart_putchar(buf[j]);
+        for (int j = i + 2; j < width; j++) uart_putchar(' ');
+    } else {
+        for (int j = i + 2; j < width; j++) uart_putchar(pad);
+        uart_putchar('0'); uart_putchar('x');
+        for (int j = i - 1; j >= 0; j--) uart_putchar(buf[j]);
     }
 }
-
-
 
 /*--------------------------------------------------*/
 static void print_int_to_buf(char *buf, int *pos, int maxlen, int value, int width, char pad, int left_align)
 {
     char tmp[12];
-    int i = 0;
-    int is_negative = 0;
-    
-    if (value < 0) {
-        is_negative = 1;
-        value = -value;
-    }
-    
-    do {
-        tmp[i++] = '0' + (value % 10);
-        value /= 10;
-    } while (value);
-    
-    if (is_negative) {
-        tmp[i++] = '-';
-    }
-    
-    // Left-aligned: number first, then padding
+    int  i           = 0;
+    int  is_negative = (value < 0);
+
+    if (is_negative) value = -value;
+
+    do { tmp[i++] = '0' + (value % 10); value /= 10; } while (value);
+    if (is_negative) tmp[i++] = '-';
+
     if (left_align) {
-        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) {
-            buf[(*pos)++] = tmp[j];
-        }
-        for (int j = i; j < width && *pos < maxlen - 1; j++) {
-            buf[(*pos)++] = pad;
-        }
-    }
-    // Right-aligned: padding first, then number
-    else {
-        for (int j = i; j < width && *pos < maxlen - 1; j++) {
-            buf[(*pos)++] = pad;
-        }
-        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) {
-            buf[(*pos)++] = tmp[j];
-        }
+        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) buf[(*pos)++] = tmp[j];
+        for (int j = i; j < width && *pos < maxlen - 1; j++)  buf[(*pos)++] = ' ';
+    } else {
+        for (int j = i; j < width && *pos < maxlen - 1; j++)  buf[(*pos)++] = pad;
+        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) buf[(*pos)++] = tmp[j];
     }
 }
-
-
 
 /*--------------------------------------------------*/
 static void print_hex_to_buf(char *buf, int *pos, int maxlen, unsigned int value, int width, char pad, int left_align)
 {
-    const char *hex = "0123456789ABCDEF";
+    const char hex[] = "0123456789ABCDEF";
     char tmp[8];
-    int i = 0;
-    
-    do {
-        tmp[i++] = hex[value & 0xF];
-        value >>= 4;
-    } while (value);
-    
-    // Left-aligned: 0x + number first, then padding
+    int  i = 0;
+
+    do { tmp[i++] = hex[value & 0xF]; value >>= 4; } while (value);
+
     if (left_align) {
-        if (*pos < maxlen - 2) {
-            buf[(*pos)++] = '0';
-            buf[(*pos)++] = 'x';
-        }
-        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) {
-            buf[(*pos)++] = tmp[j];
-        }
-        for (int j = i + 2; j < width && *pos < maxlen - 1; j++) {
-            buf[(*pos)++] = pad;
-        }
-    }
-    // Right-aligned: padding first, then 0x + number
-    else {
-        for (int j = i + 2; j < width && *pos < maxlen - 1; j++) {
-            buf[(*pos)++] = pad;
-        }
-        if (*pos < maxlen - 2) {
-            buf[(*pos)++] = '0';
-            buf[(*pos)++] = 'x';
-        }
-        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) {
-            buf[(*pos)++] = tmp[j];
-        }
+        if (*pos < maxlen - 2) { buf[(*pos)++] = '0'; buf[(*pos)++] = 'x'; }
+        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) buf[(*pos)++] = tmp[j];
+        for (int j = i + 2; j < width && *pos < maxlen - 1; j++) buf[(*pos)++] = ' ';
+    } else {
+        for (int j = i + 2; j < width && *pos < maxlen - 1; j++) buf[(*pos)++] = pad;
+        if (*pos < maxlen - 2) { buf[(*pos)++] = '0'; buf[(*pos)++] = 'x'; }
+        for (int j = i - 1; j >= 0 && *pos < maxlen - 1; j--) buf[(*pos)++] = tmp[j];
     }
 }
 
 /*
 Usage examples:
 -------------------------------------------------------------
-uart_printf("%-15s|\n", "hello");       // "hello          |"
-uart_printf("%15s|\n", "hello");        // "          hello|"
-uart_printf("%-10s|\n", "test");        // "test      |"
-uart_printf("%s|\n", "no padding");     // "no padding|"
-uart_printf("%-10d|\n", 123);           // "123       |"
-uart_printf("%10d|\n", 123);            // "       123|"
-uart_printf("%-10x|\n", 0xFF);          // "0xFF      |"
-uart_printf("%10x|\n", 0xFF);           // "      0xFF|"
-
+uart_printf("%-15s|\n", "hello");    // "hello          |"
+uart_printf("%15s|\n",  "hello");    // "          hello|"
+uart_printf("%-10d|\n", 123);        // "123       |"
+uart_printf("%10d|\n",  123);        // "       123|"
+uart_printf("%-10x|\n", 0xFF);       // "0xFF      |"
+uart_printf("%10x|\n",  0xFF);       // "      0xFF|"
 */

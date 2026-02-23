@@ -1,45 +1,33 @@
 cmake_minimum_required(VERSION 3.20)
-project(stm32app C CXX)
+project(stm32app C CXX ASM)
 
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Enable warnings project-wide
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic)
-    add_compile_options(-Wno-cast-function-type)
-elseif(MSVC)
-    add_compile_options(/W4)
-endif()
+# Extra warnings not already covered by the toolchain flags
+add_compile_options(-Wpedantic -Wno-cast-function-type)
 
-# Putty, Zoc
-# add_compile_definitions(SERIAL_TERMINAL)
-
-# RENODE
-# add_compile_definitions(MY_TERMINAL)
-
+# Terminal backend
 add_compile_definitions(MY_TERMINAL)
 
 # ============== TARGET-SPECIFIC CONFIGURATION ==============
-if(STM32_TARGET STREQUAL "STM32F103")
-    set(THREADX_PORT "GCC/ARM_CM3")
+if(STM32_FAMILY STREQUAL "F1")
     set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f103")
-    add_compile_definitions(STM32F1)
     add_compile_definitions(STM32F103)
-    
-elseif(STM32_TARGET STREQUAL "STM32F411")
-    set(THREADX_PORT "GCC/ARM_CM4F")
+
+elseif(STM32_FAMILY STREQUAL "F4")
     set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f411")
-    add_compile_definitions(STM32F4)
     add_compile_definitions(STM32F411)
+
+else()
+    message(FATAL_ERROR "Unknown STM32_FAMILY '${STM32_FAMILY}'. Set it in your toolchain file.")
 endif()
 
-add_subdirectory(threadx)          
+add_subdirectory(threadx)
 add_subdirectory(sources)
 
 add_executable(${PROJECT_NAME}.elf)
 
-# Link libraries
 target_link_libraries(${PROJECT_NAME}.elf
     user_main
     ushell_core

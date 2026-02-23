@@ -1,0 +1,7 @@
+if(STM32_FAMILY STREQUAL "F1")
+    add_subdirectory(stm32f1xx_hal_driver)
+    add_subdirectory(cmsis_device_f1)
+elseif(STM32_FAMILY STREQUAL "F4")
+    add_subdirectory(stm32f4xx_hal_driver)
+    add_subdirectory(cmsis_device_f4)
+endif()

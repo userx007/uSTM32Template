@@ -36,7 +36,7 @@ do_build() {
     rm -rf *
     echo "Building in folder: build .."
 
-    cmake -DCMAKE_TOOLCHAIN_FILE=stm32f1-arm-none-eabi.cmake -DSTM32_TARGET=STM32F103 ..
+    cmake -DCMAKE_TOOLCHAIN_FILE=stm32f1-arm-none-eabi.cmake ..
 
     make
     echo "Build finished !"

@@ -1,0 +1,9 @@
+[submodule "ThreadX_Shell/sources/st_hal/stm32f4xx_hal_driver"]
+	path = ThreadX_Shell/sources/st_hal/stm32f4xx_hal_driver
+	url = https://github.com/STMicroelectronics/stm32f4xx_hal_driver.git
+[submodule "ThreadX_Shell/sources/st_hal/cmsis_device_f4"]
+	path = ThreadX_Shell/sources/st_hal/cmsis_device_f4
+	url = https://github.com/STMicroelectronics/cmsis_device_f4.git
+[submodule "ThreadX_Shell/sources/st_hal/CMSIS_5"]
+	path = ThreadX_Shell/sources/st_hal/CMSIS_5
+	url = https://github.com/ARM-software/CMSIS_5.git

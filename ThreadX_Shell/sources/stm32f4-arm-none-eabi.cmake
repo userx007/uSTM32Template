@@ -33,6 +33,7 @@ set(CMAKE_GDB ${TOOLCHAIN_PREFIX}-gdb)
 set(CPU_FLAGS "-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard")
 set(CMAKE_C_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -DSTM32F4")
 set(CMAKE_CXX_FLAGS "${CPU_FLAGS} -Wall -O2 -Wextra -DSTM32F4 -fno-exceptions -fno-rtti")
+set(CMAKE_ASM_FLAGS "${CPU_FLAGS}")
 
 # Define the linker script
 set(CMAKE_EXE_LINKER_FLAGS "-nostartfiles -Wl,--script=${CMAKE_SOURCE_DIR}/linker/stm32f411ceu6.ld,--gc-sections,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}.map --specs=nano.specs --specs=nosys.specs")
