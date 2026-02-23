@@ -1,5 +1,6 @@
 #![no_std]
-#![no_implicit_prelude]
+
+extern crate ushell2;
 
 pub mod commands;
 pub mod shortcuts;

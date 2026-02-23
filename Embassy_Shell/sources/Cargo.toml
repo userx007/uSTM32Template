@@ -3,7 +3,8 @@ members = [
     "main_app",
     "ushell/ushell_usercode",
     "ushell/ushell_dispatcher",
-    "ushell/ushell2"
+    "ushell/ushell2",
+    "uart_hal"    
 ]
 resolver = "2"
 

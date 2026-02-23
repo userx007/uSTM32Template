@@ -23,7 +23,8 @@ use crate::autocomplete::Autocomplete;
 use crate::history::History;
 use crate::input::buffer::InputBuffer;
 use crate::input::key_reader::Key;
-use crate::input::renderer::{DisplayRenderer, UnifiedWriter};
+use crate::input::renderer::DisplayRenderer;
+use crate::logger::UnifiedWriter;
 
 // Import StdWriter for hosted builds
 #[cfg(feature = "hosted")]
@@ -31,7 +32,7 @@ use crate::input::renderer::StdWriter;
 
 /// # Type Parameters
 /// - `W`: UnifiedWriter type for output (StdWriter for hosted, CallbackWriter for embedded)
-/// - `NAC`: Number of Autocomplete Candidates.
+/// - `NAC`: Number of Autocomplete Candidates (should be MAX_COMMANDS_PER_LETTER, not total commands)
 /// - `FNL`: Function Name Length (for autocomplete)
 /// - `IML`: Input Maximum Length (input buffer maximum length).
 /// - `HTC`: History Total Capacity (number of entries).
@@ -59,6 +60,9 @@ pub struct InputParser<
     shell_datatypes: &'static str,
     shell_shortcuts: &'static str,
     autocomplete: Autocomplete<'a, NAC, FNL>,
+
+    // Temporary buffer for passing commands to autocomplete (sized with NAC)
+    temp_commands: Vec<&'a str, NAC>,
 
     #[cfg(feature = "heap-history")]
     history: Box<History<HTC>>,
@@ -92,7 +96,7 @@ impl<
     /// - `prompt`: The prompt string displayed to the user during input.
     ///
     /// # Behavior
-    /// - Initializes autocomplete candidates from the command names.
+    /// - Initializes autocomplete in lazy-loading mode (candidates loaded after first character typed).
     /// - Constructs the history and input buffer, using heap or stack allocation depending on feature flags.
     /// - Creates a DisplayRenderer with the provided writer.
     ///
@@ -103,10 +107,8 @@ impl<
         shell_shortcuts: &'static str,
         prompt: &'static str,
     ) -> Self {
-        let mut candidates = Vec::<&'a str, NAC>::new();
-        for &(first, _) in shell_commands {
-            candidates.push(first).unwrap();
-        }
+        // Note: Autocomplete now loads candidates lazily after first character is typed
+        // No need to pre-populate all candidates here
 
         #[cfg(feature = "heap-history")]
         let history = Box::new(History::<HTC>::new());
@@ -128,7 +130,8 @@ impl<
             shell_commands,
             shell_datatypes,
             shell_shortcuts,
-            autocomplete: Autocomplete::<'a, NAC, FNL>::new(candidates),
+            autocomplete: Autocomplete::<'a, NAC, FNL>::new(),
+            temp_commands: Vec::new(),
             history,
             buffer,
             prompt,
@@ -158,8 +161,7 @@ impl<
     }
 
     fn buffer_to_autocomplete_input(&self) -> String<FNL> {
-        let buf_str = self.buffer.to_string();
-        buf_str.chars().take(FNL).collect()
+        self.buffer.chars().take(FNL).collect()
     }
 
     fn render_buffer(&mut self) {
@@ -182,20 +184,39 @@ impl<
     ///
     pub fn handle_char(&mut self, ch: char) {
         if self.buffer.insert(ch) {
-            let input_full = self.buffer.to_string();
-            let autocomplete_input: String<FNL> = input_full.chars().take(FNL).collect();
+            let autocomplete_input: String<FNL> = self.buffer.chars().take(FNL).collect();
 
-            // Clone for comparison before moving into update_input
-            let input_prefix_clone = autocomplete_input.clone();
+            // Collect commands for this first character
+            // We need to provide &'a [&'a str] to the closure, but we're in a method with lifetime 'self
+            // However, the actual command strings are 'static (from shell_commands), so this is safe
+            self.temp_commands.clear();
+            if let Some(first_char) = autocomplete_input.chars().next() {
+                for &(cmd_name, _) in self.shell_commands {
+                    if let Some(first) = cmd_name.chars().next() {
+                        if first == first_char {
+                            let _ = self.temp_commands.push(cmd_name);
+                        }
+                    }
+                }
+            }
 
-            self.autocomplete.update_input(autocomplete_input);
+            // SAFETY: The command strings are 'static (from shell_commands: &'static [...]),
+            // and 'static outlives 'a, so it's safe to transmute the slice lifetime.
+            // We're only extending the lifetime of the slice reference, not the strings themselves.
+            let temp_commands_static: &'a [&'a str] = unsafe {
+                core::mem::transmute::<&[&str], &'a [&'a str]>(self.temp_commands.as_slice())
+            };
+
+            self.autocomplete
+                .update_input(&autocomplete_input, |_| temp_commands_static);
+
             let suggestion = self.autocomplete.current_input();
 
-            if suggestion != input_prefix_clone.as_str() {
+            if suggestion != autocomplete_input.as_str() {
                 let mut new_buf = String::<IML>::new();
                 let _ = new_buf.push_str(suggestion);
 
-                for c in input_full.chars().skip(FNL) {
+                for c in self.buffer.chars().skip(FNL) {
                     let _ = new_buf.push(c);
                 }
                 self.buffer.overwrite(&new_buf);
@@ -221,7 +242,26 @@ impl<
     pub fn handle_backspace(&mut self) {
         if self.buffer.backspace() {
             let autocomplete_input = self.buffer_to_autocomplete_input();
-            self.autocomplete.update_input(autocomplete_input);
+
+            // Collect commands for this first character
+            self.temp_commands.clear();
+            if let Some(first_char) = autocomplete_input.chars().next() {
+                for &(cmd_name, _) in self.shell_commands {
+                    if let Some(first) = cmd_name.chars().next() {
+                        if first == first_char {
+                            let _ = self.temp_commands.push(cmd_name);
+                        }
+                    }
+                }
+            }
+
+            // SAFETY: Same justification as handle_char - commands are 'static
+            let temp_commands_static: &'a [&'a str] = unsafe {
+                core::mem::transmute::<&[&str], &'a [&'a str]>(self.temp_commands.as_slice())
+            };
+
+            self.autocomplete
+                .update_input(&autocomplete_input, |_| temp_commands_static);
         } else {
             self.renderer.bell();
         }
@@ -247,11 +287,10 @@ impl<
         }
 
         let suggestion = self.autocomplete.current_input();
-        let input_full = self.buffer.to_string();
         let mut new_buf = String::<IML>::new();
         let _ = new_buf.push_str(suggestion);
 
-        for c in input_full.chars().skip(FNL) {
+        for c in self.buffer.chars().skip(FNL) {
             let _ = new_buf.push(c);
         }
 
@@ -452,7 +491,8 @@ impl<
     ///
     pub fn handle_clear(&mut self) {
         self.buffer.clear();
-        self.autocomplete.update_input(String::<FNL>::new());
+        // Empty input - no commands needed
+        self.autocomplete.update_input("", |_| &[]);
         self.render_buffer();
     }
 
@@ -470,7 +510,8 @@ impl<
             self.history.push(cmd.as_str());
         }
         self.buffer.clear();
-        self.autocomplete.update_input(String::<FNL>::new());
+        // Empty input - no commands needed
+        self.autocomplete.update_input("", |_| &[]);
         cmd
     }
 
@@ -597,6 +638,14 @@ impl<
                     self.handle_tab(false);
                 }
                 Key::ShiftTab => {
+                    self.handle_tab(true);
+                }
+                Key::CtrlN => {
+                    // Ctrl+N as alternative to Tab
+                    self.handle_tab(false);
+                }
+                Key::CtrlP => {
+                    // Ctrl+P as alternative to Shift+Tab
                     self.handle_tab(true);
                 }
                 Key::ArrowUp => {

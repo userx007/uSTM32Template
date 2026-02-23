@@ -1,0 +1,12 @@
+[package]
+name    = "ushell_ctx"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+heapless = { version = "0.9.1" }
+uart_hal      = { path = "../uart_hal" }
+ushell2       = { path = "../ushell/ushell2" }
+
+[features]
+hosted = []

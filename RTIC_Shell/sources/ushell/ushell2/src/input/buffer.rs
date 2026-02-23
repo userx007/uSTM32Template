@@ -250,6 +250,42 @@ impl<const IML: usize> InputBuffer<IML> {
         self.cursor_pos
     }
 
+    /// Returns a slice of the valid characters without allocation.
+    ///
+    /// This provides direct access to the character buffer without creating a String.
+    /// Useful for iterating or inspecting the buffer contents efficiently.
+    ///
+    /// # Example
+    /// ```
+    /// let mut buf: InputBuffer<8> = InputBuffer::new();
+    /// buf.insert('a');
+    /// buf.insert('b');
+    /// let chars = buf.as_chars();
+    /// assert_eq!(chars, &['a', 'b']);
+    /// ```
+    #[inline]
+    pub fn as_chars(&self) -> &[char] {
+        &self.buffer[0..self.length]
+    }
+
+    /// Returns an iterator over the valid characters without allocation.
+    ///
+    /// This is more efficient than calling `to_string()` when you only need to
+    /// iterate over the characters or collect into a smaller string.
+    ///
+    /// # Example
+    /// ```
+    /// let mut buf: InputBuffer<8> = InputBuffer::new();
+    /// buf.insert('a');
+    /// buf.insert('b');
+    /// let count = buf.chars().count();
+    /// assert_eq!(count, 2);
+    /// ```
+    #[inline]
+    pub fn chars(&self) -> impl Iterator<Item = char> + '_ {
+        self.buffer[0..self.length].iter().copied()
+    }
+
     /// Deletes all characters from the start up to the cursor.
     ///
     /// The cursor is moved to the start.
@@ -263,7 +299,7 @@ impl<const IML: usize> InputBuffer<IML> {
     /// ```
     pub fn delete_to_start(&mut self) {
         if self.cursor_pos == 0 {
-            return; 
+            return;
         }
 
         let shift = self.length - self.cursor_pos;
@@ -291,7 +327,7 @@ impl<const IML: usize> InputBuffer<IML> {
     /// ```
     pub fn delete_to_end(&mut self) {
         if self.cursor_pos >= self.length {
-            return; 
+            return;
         }
 
         for i in self.cursor_pos..self.length {

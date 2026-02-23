@@ -7,15 +7,13 @@ edition = "2021"
 hosted = []
 
 [dependencies]
-# Enable async feature!
-ushell2 = { path = "../ushell/ushell2", features = ["async"] }
-ushell_usercode = { path = "../ushell_usercode" }
-ushell_config = { path = "../ushell/ushell_config" }
-ushell_dispatcher = { path = "../ushell/ushell_dispatcher" }
-ushell_input = { path = "../ushell/ushell_input" }
-ushell_logger = { path = "../ushell/ushell_logger" }
 uart_hal = { path = "../uart_hal" }
 
+# Enable async feature!
+ushell2 = { path = "../ushell/ushell2", features = ["async"] }
+ushell_usercode = { path = "../ushell/ushell_usercode" }
+ushell_dispatcher = { path = "../ushell/ushell_dispatcher" }
+ushell_ctx = { path = "../ushell_ctx" }
 
 # RTIC framework
 rtic = { version = "2.1", features = ["thumbv7-backend"] }

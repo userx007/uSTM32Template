@@ -3,7 +3,7 @@ use core::ops::FnMut;
 
 /// Import and re-export the unified writer from logger
 ///
-pub use ushell_logger::UnifiedWriter;
+use crate::logger::UnifiedWriter;
 
 /// Standard library writer (for hosted platforms)
 ///
