@@ -1,7 +1,6 @@
 #![allow(non_snake_case)]
 
-extern crate ushell_logger;
-use ushell_logger::*;
+use ushell2::log_info;
 
 // Implement the actual logic for each shortcut
 pub fn shortcut_plus_plus(param: &str) {

@@ -14,20 +14,24 @@ categories = ["development-tools", "command-line-utilities"]
 authors = ["userx007 <vmpxxl@gmail.com>"]
 
 [features]
+default = ["heapless"]        # no_std by default
+use-heapless = ["heapless"]   # Use heapless for string formatting
+history-persistence = []
+heap-history = []
+heap-input-buffer = []
+hosted = ["dep:winapi", "dep:termios"]  # Enable platform dependencies when hosted
 async = []
 
-# Hosted environment support (for development/testing on desktop)
-hosted = []
-
-# Default: sync mode (bare metal compatible)
-default = []
-
-
 [dependencies]
-heapless = "0.9.1"
-ushell_input = { version = "0.1.0", path = "../ushell_input" }
-ushell_logger = { path = "../ushell_logger" }
+heapless = { version = "0.9.1", optional = true }
+winapi = { version = "0.3.9", features = ["consoleapi", "wincon", "processenv", "handleapi", "winbase"], optional = true }
+termios = { version = "0.3.3", optional = true }
+critical-section = "1.1"
 
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["consoleapi", "wincon", "processenv", "handleapi"] }
+
+
+[lib]
+doctest = false

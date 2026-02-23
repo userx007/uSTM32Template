@@ -127,29 +127,59 @@ pub fn generate_shortcuts_dispatcher_from_file(input: TokenStream) -> TokenStrea
         }
     }
 
-    let supported_checks = prefixes.iter().map(|p| {
-        quote! { c == #p }
-    });
+    // Check if all prefixes are ASCII for optimization
+    let all_ascii = prefixes.iter().all(|p| p.is_ascii());
+
+    let support_fn = if all_ascii {
+        // Optimized ASCII version using byte comparison
+        let prefix_bytes: Vec<_> = prefixes
+            .iter()
+            .map(|p| {
+                let byte = p.as_bytes()[0];
+                quote! { #byte }
+            })
+            .collect();
+
+        quote! {
+            #[inline]
+            pub fn is_supported_shortcut(input: &str) -> bool {
+                let trimmed = input.trim();
+                if trimmed.is_empty() {
+                    return false;
+                }
+                let first_byte = trimmed.as_bytes()[0];
+                matches!(first_byte, #( #prefix_bytes )|*)
+            }
+        }
+    } else {
+        // Non-ASCII version using string comparison
+        let supported_checks = prefixes.iter().map(|p| {
+            quote! { c == #p }
+        });
+
+        quote! {
+            #[inline]
+            pub fn is_supported_shortcut(input: &str) -> bool {
+                let trimmed = input.trim();
+                if trimmed.is_empty() {
+                    return false;
+                }
+                let c = &trimmed[0..1];
+                #( #supported_checks )||*
+            }
+        }
+    };
 
     let shortcut_list = shortcut_keys.join(" | ");
     let list_fn = quote! {
+        #[inline(always)]
         pub fn get_shortcuts() -> &'static str {
             #shortcut_list
         }
     };
 
-    let support_fn = quote! {
-        pub fn is_supported_shortcut(input: &str) -> bool {
-            let trimmed = input.trim();
-            if trimmed.is_empty() {
-                return false;
-            }
-            let c = &trimmed[0..1];
-            #( #supported_checks )||*
-        }
-    };
-
     let dispatch_fn = quote! {
+        #[inline]
         pub fn dispatch<'a>(input: &'a str, error_buffer: &'a mut heapless::String<{ #error_buffer_size }>) -> Result<(), &'a str> {
             let trimmed = input.trim();
             let (key, param) = if trimmed.len() >= 2 {

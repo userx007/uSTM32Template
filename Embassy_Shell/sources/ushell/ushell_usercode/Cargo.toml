@@ -1,11 +1,11 @@
 [package]
 name = "ushell_usercode"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 publish = false
 
 [dependencies]
-ushell_logger = { path = "../ushell/ushell_logger" }
+ushell2 = { path = "../ushell2" }
 
 [features]
 hosted = []

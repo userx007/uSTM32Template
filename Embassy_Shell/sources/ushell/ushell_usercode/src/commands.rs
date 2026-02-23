@@ -1,10 +1,29 @@
 #![allow(non_snake_case)]
 
-extern crate ushell_logger;
-use ushell_logger::*;
+use ushell2::log_info;
 
 pub fn init() {
     log_info!("init | no-args");
+}
+
+pub fn ianit() {
+    log_info!("ianit | no-args");
+}
+
+pub fn iaanit() {
+    log_info!("iaanit | no-args");
+}
+
+pub fn ibnit() {
+    log_info!("ibnit | no-args");
+}
+
+pub fn ibbnit() {
+    log_info!("ibbnit | no-args");
+}
+
+pub fn ibbbnit() {
+    log_info!("ibbbnit | no-args");
 }
 
 pub fn read(descr: i8, nbytes: u32) {

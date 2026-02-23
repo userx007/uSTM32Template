@@ -68,7 +68,7 @@ impl LogLevel {
             LogLevel::Trace => "TRACE",
         }
     }
-    
+
     /// Allows early exit before string formatting
     #[inline]
     pub const fn is_enabled(&self, min_level: LogLevel) -> bool {
@@ -211,7 +211,7 @@ impl GlobalLogger {
         if !level.is_enabled(self.config.min_level) {
             return;
         }
-        
+
         if self.config.color_entire_line {
             println!("{}[{}] {}{}", level.color(), level.label(), message, RESET);
         } else {
@@ -289,7 +289,7 @@ impl GlobalLoggerWrapper {
         if !level.is_enabled(self.config.min_level) {
             return;
         }
-        
+
         self.writer
             .write_log(level, message, self.config.color_entire_line);
     }

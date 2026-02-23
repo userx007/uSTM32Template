@@ -27,6 +27,8 @@ pub enum Key {
     CtrlU,
     CtrlK,
     CtrlD,
+    CtrlN,
+    CtrlP,
 
     // Printable character
     Char(char),
@@ -96,6 +98,8 @@ pub mod platform {
                             0x55 => return Ok(Key::CtrlU),
                             0x4B => return Ok(Key::CtrlK),
                             0x44 => return Ok(Key::CtrlD),
+                            0x4E => return Ok(Key::CtrlN),
+                            0x50 => return Ok(Key::CtrlP),
                             _ => {}
                         }
                     }
@@ -174,6 +178,8 @@ pub mod platform {
                 b'\x15' => return Ok(Key::CtrlU),
                 b'\x0B' => return Ok(Key::CtrlK),
                 b'\x04' => return Ok(Key::CtrlD),
+                b'\x0E' => return Ok(Key::CtrlN),
+                b'\x10' => return Ok(Key::CtrlP),
                 b'\r' | b'\n' => return Ok(Key::Enter),
                 b'\t' => return Ok(Key::Tab),
                 b'\x7F' | b'\x08' => return Ok(Key::Backspace),
@@ -213,6 +219,7 @@ pub mod embedded {
         }
 
         /// Parse a single byte and return a Key if complete
+        #[inline]
         pub fn parse_byte(&mut self, byte: u8) -> Option<Key> {
             match byte {
                 // Escape sequence start
@@ -233,6 +240,8 @@ pub mod embedded {
                 0x15 => Some(Key::CtrlU), // Ctrl+U
                 0x0B => Some(Key::CtrlK), // Ctrl+K
                 0x04 => Some(Key::CtrlD), // Ctrl+D
+                0x0E => Some(Key::CtrlN), // Ctrl+N
+                0x10 => Some(Key::CtrlP), // Ctrl+P
                 b'\r' | b'\n' => Some(Key::Enter),
                 b'\t' => Some(Key::Tab),
                 0x7F | 0x08 => Some(Key::Backspace),
@@ -244,6 +253,7 @@ pub mod embedded {
             }
         }
 
+        #[inline]
         fn try_complete_escape(&mut self) -> Option<Key> {
             let buf = &self.escape_buffer[..];
 
@@ -332,6 +342,8 @@ mod tests {
             Key::CtrlU,
             Key::CtrlK,
             Key::CtrlD,
+            Key::CtrlN,
+            Key::CtrlP,
             Key::Char('x'),
         ];
     }
@@ -353,6 +365,9 @@ mod tests {
 
         assert_eq!(parser.parse_byte(0x15), Some(Key::CtrlU));
         assert_eq!(parser.parse_byte(0x0B), Some(Key::CtrlK));
+        assert_eq!(parser.parse_byte(0x04), Some(Key::CtrlD));
+        assert_eq!(parser.parse_byte(0x0E), Some(Key::CtrlN));
+        assert_eq!(parser.parse_byte(0x10), Some(Key::CtrlP));
         assert_eq!(parser.parse_byte(b'\r'), Some(Key::Enter));
         assert_eq!(parser.parse_byte(b'\t'), Some(Key::Tab));
     }

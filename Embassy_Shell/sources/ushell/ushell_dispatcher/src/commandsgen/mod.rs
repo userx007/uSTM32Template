@@ -248,6 +248,18 @@ pub fn generate_dispatcher_from_dsl(input: TokenStream) -> TokenStream {
     // Get the largest name for a function
     let function_name_max_len = entries.iter().map(|e| e.name_str.len()).max().unwrap_or(0) + 1;
 
+    // Calculate maximum number of commands starting with the same character (for autocomplete)
+    let max_commands_per_letter = {
+        let mut char_counts: std::collections::HashMap<char, usize> =
+            std::collections::HashMap::new();
+        for entry in &entries {
+            if let Some(first_char) = entry.name_str.chars().next() {
+                *char_counts.entry(first_char).or_insert(0) += 1;
+            }
+        }
+        char_counts.values().copied().max().unwrap_or(0)
+    };
+
     // Human-readable registry of function names for diagnostics/UI.
     let fn_names: Vec<LitStr> = entries
         .iter()
@@ -744,6 +756,9 @@ pub fn generate_dispatcher_from_dsl(input: TokenStream) -> TokenStream {
 
             /// Maximum number of commands
             pub const NUM_COMMANDS: usize = ENTRIES.len();
+
+            /// Maximum number of commands starting with the same character (for autocomplete)
+            pub const MAX_COMMANDS_PER_LETTER: usize = #max_commands_per_letter;
 
             // Largest function name
             pub const MAX_FUNCTION_NAME_LEN: usize = #function_name_max_len;

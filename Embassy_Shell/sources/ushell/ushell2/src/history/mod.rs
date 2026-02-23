@@ -8,9 +8,7 @@ const HISTORY_FILENAME: &str = ".hist";
 use std::fmt::Write;
 
 use crate::heapless::String;
-
 use core::default::Default;
-//use crate::ushell_prelude::*;
 
 const METADATA_SIZE: usize = 4; // 2 bytes leading + 2 bytes trailing length
 
