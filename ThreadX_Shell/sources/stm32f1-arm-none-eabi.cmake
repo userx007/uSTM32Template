@@ -43,8 +43,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 
-# libopencm3 library
-set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3 CACHE PATH "Path to libopencm3")
-set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a CACHE FILEPATH "libopencm3 static library")
-
 

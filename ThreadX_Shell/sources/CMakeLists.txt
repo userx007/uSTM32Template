@@ -22,39 +22,19 @@ add_compile_definitions(MY_TERMINAL)
 
 # ============== TARGET-SPECIFIC CONFIGURATION ==============
 if(STM32_TARGET STREQUAL "STM32F103")
-    set(FREERTOS_PORT "GCC/ARM_CM3")
-    set(FREERTOS_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/freertos_config/stm32f103")
+    set(THREADX_PORT "GCC/ARM_CM3")
+    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f103")
     add_compile_definitions(STM32F1)
     add_compile_definitions(STM32F103)
     
 elseif(STM32_TARGET STREQUAL "STM32F411")
-    set(FREERTOS_PORT "GCC/ARM_CM4F")
-    set(FREERTOS_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/freertos_config/stm32f411")
+    set(THREADX_PORT "GCC/ARM_CM4F")
+    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f411")
     add_compile_definitions(STM32F4)
     add_compile_definitions(STM32F411)
 endif()
 
-
-
-
-# Toolchain settings (or use a toolchain file)
-set(CMAKE_SYSTEM_NAME Generic)
-set(CMAKE_SYSTEM_PROCESSOR ARM)
-
-set(CPU_FLAGS "-mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard")
-set(CMAKE_C_FLAGS   "${CPU_FLAGS} -O2 -g -ffunction-sections -fdata-sections")
-set(CMAKE_ASM_FLAGS "${CPU_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CPU_FLAGS} -T${CMAKE_SOURCE_DIR}/linker/STM32F4xx.ld \
-    -Wl,--gc-sections -specs=nosys.specs")
-
-# --- ThreadX library ---
-set(THREADX_ARCH "cortex_m4")
-set(THREADX_TOOLCHAIN "gnu")
-
-# ============== THREADX ==============
-add_subdirectory(threadx)          # Exposes 'threadx' CMake target
-
-# ============== PROJECT SOURCES ==============
+add_subdirectory(threadx)          
 add_subdirectory(sources)
 
 add_executable(${PROJECT_NAME}.elf)
@@ -67,8 +47,7 @@ target_link_libraries(${PROJECT_NAME}.elf
     ushell_user_root
     uart_access
     hd44780
-    freertos
-    ${LIBOPENCM3_LIB}
+    threadx
 )
 
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD

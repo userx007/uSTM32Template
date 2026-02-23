@@ -57,16 +57,3 @@ target_include_directories(${PROJECT_NAME}
 )
 target_compile_definitions(${PROJECT_NAME} PUBLIC "TX_INCLUDE_USER_DEFINE_FILE" )
 
-# Enable a build target that produces a ZIP file of all sources
-set(CPACK_SOURCE_GENERATOR "ZIP")
-set(CPACK_SOURCE_IGNORE_FILES
-  \\.git/
-  \\.github/
-  _build/
-  \\.git
-  \\.gitattributes
-  \\.gitignore
-  ".*~$"
-)
-set(CPACK_VERBATIM_VARIABLES YES)
-include(CPack)
