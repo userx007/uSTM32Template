@@ -1,11 +1,7 @@
 #![no_std]
 #![no_main]
 
-// ---------------------------------------------------------------------------
-// Application-level business logic
-// ---------------------------------------------------------------------------
-static LED_TOGGLE_COUNT: core::sync::atomic::AtomicU32 =
-    core::sync::atomic::AtomicU32::new(0);
+use heapless::{Deque, spsc::Queue};
 
 use panic_halt as _;
 use rtic::app;
@@ -16,18 +12,6 @@ use stm32f4xx_hal::{
     serial::{Config as SerialConfig, Serial},
     timer::{Flag as TimerFlag, CounterHz, Timer},
 };
-use heapless::{Deque, spsc::Queue};
-
-use ushell_dispatcher::{generate_commands_dispatcher, generate_shortcuts_dispatcher};
-use ushell_usercode::commands as uc;
-use ushell_usercode::shortcuts as us;
-
-use ushell2::{log_info, log_simple};
-use ushell2::logger::{init_logger, LogLevel, LoggerConfig};
-
-// ---------------------------------------------------------------------------
-// UART HAL
-// ---------------------------------------------------------------------------
 use uart_hal::{
     RX_QUEUE_SIZE, TX_BUFFER_SIZE,
     UartTx, UartRx,
@@ -37,25 +21,22 @@ use uart_hal::{
     RxQueueReader,
 };
 
-// ---------------------------------------------------------------------------
-// Shell context — InputParser / AnsiKeyParser / dispatch wiring
-// ---------------------------------------------------------------------------
+use ushell_dispatcher::{generate_commands_dispatcher, generate_shortcuts_dispatcher};
+use ushell_usercode::commands as uc;
+use ushell_usercode::shortcuts as us;
+use ushell2::{log_info, log_simple};
+use ushell2::logger::{init_logger, LogLevel, LoggerConfig};
 use ushell_ctx::{ShellCtx, ShellConfig};
 
-// ============================================================================
 // Shell configuration constants
-// ============================================================================
-
 pub const PROMPT:                &str  = ">> ";
 pub const MAX_INPUT_LEN:        usize  = 128;
 pub const MAX_HEXSTR_LEN:       usize  = 64;
 pub const MAX_HISTORY_CAPACITY: usize  = 256;
 pub const MAX_ERROR_BUFFER_SIZE: usize = 32;
 
-// ============================================================================
-// Generated dispatcher modules
-// ============================================================================
 
+// Generated dispatcher modules
 generate_commands_dispatcher! {
     mod commands;
     hexstr_size       = crate::MAX_HEXSTR_LEN;
@@ -69,9 +50,7 @@ generate_shortcuts_dispatcher! {
     path              = "../ushell/ushell_usercode/src/shortcuts.cfg"
 }
 
-// ---------------------------------------------------------------------------
 // Type alias — spells out the const params once, used everywhere else
-// ---------------------------------------------------------------------------
 type MyShell = ShellCtx<
     { commands::MAX_COMMANDS_PER_LETTER }, // NAC — max autocomplete candidates
     { commands::MAX_FUNCTION_NAME_LEN   }, // FNL — function name buffer length
@@ -79,6 +58,10 @@ type MyShell = ShellCtx<
     { MAX_HISTORY_CAPACITY              }, // HTC — history ring-buffer capacity
     { MAX_ERROR_BUFFER_SIZE             }, // E   — error message buffer size
 >;
+
+static LED_TOGGLE_COUNT: core::sync::atomic::AtomicU32 =
+    core::sync::atomic::AtomicU32::new(0);
+
 
 // ============================================================================
 // RTIC application
