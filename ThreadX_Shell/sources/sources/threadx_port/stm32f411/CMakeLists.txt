@@ -4,7 +4,7 @@ project(threadx_port)
 
 add_library(${PROJECT_NAME}
     STATIC
-        src/tx_initialize_low_level.s
+        src/tx_initialize_low_level.S
         src/syscalls.c
 )
 

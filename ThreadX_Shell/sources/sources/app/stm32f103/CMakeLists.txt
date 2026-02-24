@@ -1,23 +1,23 @@
+cmake_minimum_required(VERSION 3.3)
+project(user_main)
 
-# --- Application ---
-add_executable(${PROJECT_NAME}
-    src/startup_stm32f4xx.s
-    src/tx_initialize_low_level.s
-    src/main.c
-    src/app_threadx.c
-    src/syscalls.c
+add_library(${PROJECT_NAME}
+    OBJECT
+        src/main.c
+        src/app_threadx.c
+
 )
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         threadx
+        uart_access
 )
 
 target_include_directories(${PROJECT_NAME} 
     PRIVATE 
         src 
         threadx/common/inc
-        threadx_user_cfg
 )
 
 target_compile_definitions(${PROJECT_NAME} 
