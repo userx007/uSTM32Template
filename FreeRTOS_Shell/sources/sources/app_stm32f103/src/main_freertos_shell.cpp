@@ -23,8 +23,6 @@ typedef struct {
 /* Other tasks post to this queue to display text */
 static QueueHandle_t xLcdQueue = nullptr;
 
-
-
 static void setup_clock(void) {
     /* Setup 72MHz from 8MHz HSE crystal (standard for STM32F103) */
     rcc_clock_setup_pll(&rcc_hse_configs[RCC_CLOCK_HSE8_72MHZ]);
@@ -149,8 +147,6 @@ int main(void) {
 
     /* Create the queue before any task that uses it */
     xLcdQueue = xQueueCreate(8, sizeof(LcdMessage_t));
-
-
 
     xTaskCreate(vTaskLCD,   "LCD",   512, NULL, 3, NULL);   /* Highest: owns I2C */
     xTaskCreate(vTaskBlink, "Blink", 128, NULL, 2, NULL);

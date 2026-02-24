@@ -4,14 +4,18 @@ project(user_main)
 add_library(${PROJECT_NAME}
     OBJECT
         src/main.c
-        src/app_threadx.c
+        src/app_threadx.cpp
 
 )
 
 target_link_libraries(${PROJECT_NAME} 
     PRIVATE 
         threadx
+        hd44780
         uart_access
+        ushell_core
+        ushell_core_utils
+        ushell_user_root        
 )
 
 target_include_directories(${PROJECT_NAME} 
