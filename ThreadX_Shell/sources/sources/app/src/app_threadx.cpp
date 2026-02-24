@@ -11,6 +11,8 @@
 #  include "stm32f1xx_hal.h"
 #endif
 
+#define MS_TO_TICKS(ms)  ((ms) * TX_TIMER_TICKS_PER_SECOND / 1000)
+
 /*
  * Onboard LED pinout:
  *   STM32F411CEU6 (Black Pill) : PC13 — active LOW
@@ -21,6 +23,7 @@
 /* ── Interfaces declaration ─────────────────────────────────────────────── */
 
 bool queue_is_valid(TX_QUEUE *q);
+void LCD_Post(uint8_t row, uint8_t col, const char *text);
 
 
 /* ── LED ────────────────────────────────────────────────────────────────── */
@@ -53,10 +56,12 @@ void toggle_led(void)
 static void led_thread_entry(ULONG initial_input)
 {
     (void)initial_input;
-    while (1)
-    {
+    static int i = 0;
+
+    while (1) {
         toggle_led();
-        tx_thread_sleep(100);   /* Sleep 1000 ms */
+        LCD_Post(1, 0, (i = 1 - i) == 0 ? "LED: OFF        " : "LED: ON         ");
+        tx_thread_sleep(MS_TO_TICKS(2000));   /* Sleep 2000 ms */
     }
 }
 
@@ -94,6 +99,7 @@ static ULONG lcd_queue_storage[LCD_QUEUE_CAPACITY * LCD_QUEUE_MSG_WORDS];
 void LCD_Post(uint8_t row, uint8_t col, const char *text) {
 
     if (!queue_is_valid(&lcd_queue)) {
+        uSHELL_PRINTF("Queue is invalid..\n");
         return;
     }
 
@@ -128,7 +134,7 @@ static void lcd_thread_entry(ULONG initial_input)
         uSHELL_PRINTF("LCD I2C FAIL - check address & wiring\n");
         while (!lcd.ok()) {
             uSHELL_PRINTF("LCD retry...\n");
-            tx_thread_sleep(200); /* 2000 ms */
+            tx_thread_sleep(MS_TO_TICKS(50)); /* 50 ms */
             lcd.init();
         }
     }
