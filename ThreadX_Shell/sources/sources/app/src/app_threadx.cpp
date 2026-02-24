@@ -15,11 +15,14 @@
  * Onboard LED pinout:
  *   STM32F411CEU6 (Black Pill) : PC13 — active LOW
  *   STM32F103C8T6 (Blue Pill)  : PC13 — active LOW
- *
- * Adjust GPIO_PIN / GPIOx below if your board differs.
  */
 
-/* ── LED init ────────────────────────────────────────────────────────────── */
+/* ── LED ────────────────────────────────────────────────────────────────── */
+
+static TX_THREAD led_thread;
+static ULONG led_stack[512 / sizeof(ULONG)];
+
+/* LED init */
 static void led_init(void)
 {
     __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -34,31 +37,28 @@ static void led_init(void)
     HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13, GPIO_PIN_SET); /* LED off (active LOW) */
 }
 
-/* ── LED toggle (called from led_thread) ─────────────────────────────────── */
+/* LED toggle (called from led_thread) */
 void toggle_led(void)
 {
     HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_13);
 }
 
-/* ── Thread control blocks ───────────────────────────────────────────────── */
-static TX_THREAD led_thread;
-static TX_THREAD shell_thread;
-
-/* Stack areas */
-static ULONG led_stack[512 / sizeof(ULONG)];
-static ULONG shell_stack[1024 / sizeof(ULONG)];
-
-/* --- Thread entry functions --- */
-
+/* Thread entry function */
 static void led_thread_entry(ULONG initial_input)
 {
     (void)initial_input;
     while (1)
     {
         toggle_led();
-        tx_thread_sleep(1000);   /* Sleep 50 ticks = 500 ms at 100 Hz */
+        tx_thread_sleep(100);   /* Sleep 1000 ms */
     }
 }
+
+
+/* ── SHELL ──────────────────────────────────────────────────────────────── */
+
+static TX_THREAD shell_thread;
+static ULONG shell_stack[1024 / sizeof(ULONG)];
 
 static void shell_thread_entry(ULONG initial_input)
 {
@@ -66,15 +66,109 @@ static void shell_thread_entry(ULONG initial_input)
     Microshell::getShellPtr(pluginEntry(), "root")->Run();
 }
 
-/* ── Kernel entry point ──────────────────────────────────────────────────── */
+
+/* ── LCD ────────────────────────────────────────────────────────────────── */
+
+#define LCD_MSG_LEN   32   /* Max characters per message */
+
+typedef struct {
+    uint8_t row;
+    uint8_t col;
+    char    text[LCD_MSG_LEN];
+} LcdMessage_t;
+
+#define LCD_QUEUE_MSG_SIZE      sizeof(LcdMessage_t)
+#define LCD_QUEUE_CAPACITY      32          
+#define LCD_QUEUE_STORAGE_SIZE  (LCD_QUEUE_CAPACITY * LCD_QUEUE_MSG_SIZE)
+
+static TX_THREAD lcd_thread;
+static TX_QUEUE  lcd_queue;
+static ULONG lcd_stack[512 / sizeof(ULONG)];
+static ULONG lcd_queue_storage[LCD_QUEUE_STORAGE_SIZE];
+
+void LCD_Post(uint8_t row, uint8_t col, const char *text) {
+
+    LcdMessage_t msg;
+    msg.row = row;
+    msg.col = col;
+
+    /* Safe string copy */
+    uint8_t i = 0;
+    while (text[i] && i < LCD_MSG_LEN - 1) {
+        msg.text[i] = text[i];
+        i++;
+    }
+    msg.text[i] = '\0';
+
+    UINT status = tx_queue_send(&lcd_queue, &msg, TX_NO_WAIT);
+    if (status != TX_SUCCESS){
+        uSHELL_PRINTF("Failed to send LCD message\n");
+    }
+}
+
+static void lcd_thread_entry(ULONG initial_input)
+{
+    (void)initial_input;
+
+    static HD44780_PCF8574 lcd(0x27, 16, 2);   /* PCF8574 at 0x27, 16x2 display */
+
+    if (!lcd.init()) {
+        /* I2C probe failed: wrong address, missing component, or
+         * PICSimLab PCF8574 not connected on I2C1 (PB6=SCL, PB7=SDA).
+         * Try 0x3F if you have a PCF8574A backpack. */
+        uSHELL_PRINTF("LCD I2C FAIL - check address & wiring\n");
+        while (!lcd.ok()) {
+            uSHELL_PRINTF("LCD retry...\n");
+            tx_thread_sleep(200); /* 2000 ms */
+            lcd.init();
+        }
+    }
+
+    uSHELL_PRINTF("LCD OK\n");
+
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("System Ready");
+    lcd.setCursor(0, 1);
+    lcd.print("STM32F103");
+
+    LcdMessage_t msg;
+
+    while (1) {
+        /* Block until a message arrives (no timeout = wait forever) */
+        if (tx_queue_receive(&lcd_queue, &msg, TX_WAIT_FOREVER) == TX_SUCCESS) {
+            lcd.setCursor(msg.col, msg.row);
+            lcd.print(msg.text);
+        }
+    }    
+}
+
+
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* ── Kernel entry point ─────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────────────── */
 void tx_application_define(void *first_unused_memory)
 {
     (void)first_unused_memory;
+    UINT status;
 
     led_init();
 
-    UINT status;
+    status = tx_queue_create(
+        &lcd_queue,                     /* Control block          */
+        (CHAR*)"LCD Queue",             /* Name                   */
+        LCD_QUEUE_MSG_SIZE,             /* message size           */
+        lcd_queue_storage,              /* Storage buffer         */
+        LCD_QUEUE_STORAGE_SIZE          /* Buffer size in bytes   */
+    );
 
+    if (status != TX_SUCCESS){
+        uSHELL_PRINTF("Failed to create LCD queue\n");
+        while (1); /* Handle error — queue creation failed */
+    }
+
+    /* ── LED ───────────────────────────────────── */
     /* Create LED thread: priority 10, preemption-threshold 10 (disabled),
        no time-slice, auto-start */
     status = tx_thread_create(
@@ -84,34 +178,54 @@ void tx_application_define(void *first_unused_memory)
         0,                      /* Entry input */
         led_stack,              /* Stack base */
         sizeof(led_stack),      /* Stack size in bytes */
-        10,                     /* Priority (0=highest, 31=lowest by default) */
-        10,                     /* Preemption-threshold */
+        29,                     /* Priority (0=highest, 31=lowest by default) */
+        29,                     /* Preemption-threshold */
         TX_NO_TIME_SLICE,       /* Time-slice */
         TX_AUTO_START           /* Auto-start */
     );
 
-    if (status != TX_SUCCESS)
-    {
-        /* Handle error — typically halt or assert */
-        while (1) {}
+    if (status != TX_SUCCESS) {
+        uSHELL_PRINTF("Failed to create LED thread\n");
+        while (1) {} /* Handle error — typically halt or assert */
     }
 
+    /* ── LCD ───────────────────────────────────── */
     /* Create UART thread at lower priority */
     status = tx_thread_create(
-        &shell_thread,          /* Control block */
-        (CHAR*)"SHELL Thread",         /* Name (debug) */
-        shell_thread_entry,     /* Entry function */
+        &lcd_thread,            /* Control block */
+        (CHAR*)"LCD Thread",    /* Name (debug) */
+        lcd_thread_entry,       /* Entry function */
         0,                      /* Entry input */
-        shell_stack,             /* Stack base */
-        sizeof(shell_stack),     /* Stack size in bytes */
-        15,                     /* Priority (0=highest, 31=lowest by default) */
-        15,                     /* Preemption-threshold */
+        lcd_stack,              /* Stack base */
+        sizeof(lcd_stack),      /* Stack size in bytes */
+        30,                     /* Priority (0=highest, 31=lowest by default) */
+        30,                     /* Preemption-threshold */
         TX_NO_TIME_SLICE,       /* Time-slice */
         TX_AUTO_START           /* Auto-start */
     );
 
-    if (status != TX_SUCCESS)
-    {
-        while (1) {}
+    if (status != TX_SUCCESS) {
+        uSHELL_PRINTF("Failed to create LCD thread\n");
+        while (1) {} /* Handle error — typically halt or assert */
     }
+
+    /* ── SHELL ─────────────────────────────────── */
+    /* Create Shell thread at lower priority */
+    status = tx_thread_create(
+        &shell_thread,          /* Control block */
+        (CHAR*)"SHELL Thread",  /* Name (debug) */
+        shell_thread_entry,     /* Entry function */
+        0,                      /* Entry input */
+        shell_stack,            /* Stack base */
+        sizeof(shell_stack),    /* Stack size in bytes */
+        31,                     /* Priority (0=highest, 31=lowest by default) */
+        31,                     /* Preemption-threshold */
+        TX_NO_TIME_SLICE,       /* Time-slice */
+        TX_AUTO_START           /* Auto-start */
+    );
+
+    if (status != TX_SUCCESS) {
+        uSHELL_PRINTF("Failed to create SHELL thread\n");
+        while (1) {} /* Handle error — typically halt or assert */
+    }    
 }
