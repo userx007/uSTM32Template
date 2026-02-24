@@ -15,7 +15,18 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        stm32f4xx_hal
         threadx
         ushell_core_config
 )
+
+if(STM32_FAMILY STREQUAL "F4")
+    target_link_libraries(${PROJECT_NAME}
+        PUBLIC 
+            stm32f4xx_hal
+    )
+elseif(STM32_FAMILY STREQUAL "F1")
+    target_link_libraries(${PROJECT_NAME} 
+        PUBLIC 
+            stm32f1xx_hal
+    )
+endif()

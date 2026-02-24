@@ -23,5 +23,5 @@ target_link_libraries(stm32f4xx_hal PUBLIC
 
 # HAL requires a hal_conf.h — provided by the user project
 target_include_directories(stm32f4xx_hal PUBLIC
-    ${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f411
+    ${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f411/inc/
 )

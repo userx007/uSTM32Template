@@ -12,12 +12,12 @@ add_compile_definitions(MY_TERMINAL)
 
 # ============== TARGET-SPECIFIC CONFIGURATION ==============
 if(STM32_FAMILY STREQUAL "F1")
-    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f103")
+    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f103/inc/")
     set(STARTUP_FILE "${CMAKE_SOURCE_DIR}/startup/startup_stm32f103xb.s")
     add_compile_definitions(STM32F103)
 
 elseif(STM32_FAMILY STREQUAL "F4")
-    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f411")
+    set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f411/inc/")
     set(STARTUP_FILE "${CMAKE_SOURCE_DIR}/startup/startup_stm32f4xx.s")
     add_compile_definitions(STM32F411)
 

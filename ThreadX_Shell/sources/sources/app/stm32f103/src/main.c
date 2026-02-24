@@ -37,7 +37,7 @@ int main(void)
     SystemClock_Config();
 
     /* 3. Init UART so uart_printf() works from the very first thread tick. */
-    uart_init();
+    uart_setup();
 
     /* 4. Start the ThreadX kernel — calls tx_application_define() then
           schedules threads.  Never returns. */

@@ -19,5 +19,5 @@ target_link_libraries(stm32f1xx_hal PUBLIC
 )
 
 target_include_directories(stm32f1xx_hal PUBLIC
-    ${CMAKE_SOURCE_DIR}/sources/libs/threadx_config/stm32f103
+    ${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f103/inc/
 )
