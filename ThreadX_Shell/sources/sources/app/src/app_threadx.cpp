@@ -83,14 +83,13 @@ typedef struct {
     char    text[LCD_MSG_LEN];
 } LcdMessage_t;
 
-#define LCD_QUEUE_MSG_SIZE      sizeof(LcdMessage_t)
-#define LCD_QUEUE_CAPACITY      32          
-#define LCD_QUEUE_STORAGE_SIZE  (LCD_QUEUE_CAPACITY * LCD_QUEUE_MSG_SIZE)
+#define LCD_QUEUE_MSG_WORDS     ((sizeof(LcdMessage_t) + sizeof(ULONG) - 1) / sizeof(ULONG))
+#define LCD_QUEUE_CAPACITY      5          
 
 static TX_THREAD lcd_thread;
 static TX_QUEUE  lcd_queue;
-static ULONG lcd_stack[512 / sizeof(ULONG)];
-static ULONG lcd_queue_storage[LCD_QUEUE_STORAGE_SIZE];
+static ULONG lcd_stack[2048 / sizeof(ULONG)];
+static ULONG lcd_queue_storage[LCD_QUEUE_CAPACITY * LCD_QUEUE_MSG_WORDS];
 
 void LCD_Post(uint8_t row, uint8_t col, const char *text) {
 
@@ -171,9 +170,9 @@ void tx_application_define(void *first_unused_memory)
     status = tx_queue_create(
         &lcd_queue,                     /* Control block          */
         (CHAR*)"LCD Queue",             /* Name                   */
-        LCD_QUEUE_MSG_SIZE,             /* message size           */
+        LCD_QUEUE_MSG_WORDS,            /* message size           */
         lcd_queue_storage,              /* Storage buffer         */
-        LCD_QUEUE_STORAGE_SIZE          /* Buffer size in bytes   */
+        sizeof(lcd_queue_storage)       /* Buffer size in bytes   */
     );
 
     if (status != TX_SUCCESS){
