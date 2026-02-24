@@ -54,7 +54,7 @@ static void led_thread_entry(ULONG initial_input)
     while (1)
     {
         toggle_led(LED_GREEN);
-        tx_thread_sleep(50);   /* Sleep 50 ticks = 500 ms at 100 Hz */
+        tx_thread_sleep(1000);   /* Sleep 50 ticks = 500 ms at 100 Hz */
     }
 }
 
@@ -65,7 +65,7 @@ static void uart_thread_entry(ULONG initial_input)
     while (1)
     {
         uart_printf("Tick: %d\r\n", tick++);
-        tx_thread_sleep(100);  /* 100 ticks = 1 s at 100 Hz */
+        tx_thread_sleep(1000);  /* 100 ticks = 1 s at 100 Hz */
     }
 }
 
