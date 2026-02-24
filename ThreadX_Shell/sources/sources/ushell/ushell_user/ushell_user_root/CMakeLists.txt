@@ -5,7 +5,7 @@ project(ushell_user_root)
 
 
 add_library(${PROJECT_NAME}
-    OBJECT
+    STATIC
         src/ushell_root_interface.cpp
         src/ushell_root_usercode.cpp
 )

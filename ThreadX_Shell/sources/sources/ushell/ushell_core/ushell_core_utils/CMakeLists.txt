@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 project(ushell_core_utils)
 
 add_library(${PROJECT_NAME}
-    OBJECT
+    STATIC
         src/ushell_core_utils.cpp
 )
 

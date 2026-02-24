@@ -14,11 +14,13 @@ add_compile_definitions(MY_TERMINAL)
 if(STM32_FAMILY STREQUAL "F1")
     set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f103/inc/")
     set(STARTUP_FILE "${CMAKE_SOURCE_DIR}/startup/startup_stm32f103xb.s")
+    set(STM32_HAL_LIB stm32f1xx_hal)
     add_compile_definitions(STM32F103)
 
 elseif(STM32_FAMILY STREQUAL "F4")
     set(THREADX_CONFIG_DIR "${CMAKE_SOURCE_DIR}/sources/threadx_port/stm32f411/inc/")
     set(STARTUP_FILE "${CMAKE_SOURCE_DIR}/startup/startup_stm32f4xx.s")
+    set(STM32_HAL_LIB stm32f4xx_hal)
     add_compile_definitions(STM32F411)
 
 else()
@@ -34,13 +36,14 @@ add_executable(${PROJECT_NAME}.elf
 
 target_link_libraries(${PROJECT_NAME}.elf
     threadx
-    threadx_port   
+    threadx_port
     user_main
     ushell_core
     ushell_core_utils
     ushell_user_root
     uart_access
     hd44780
+    ${STM32_HAL_LIB}
 )
 
 target_link_options(${PROJECT_NAME}.elf 
@@ -48,6 +51,11 @@ target_link_options(${PROJECT_NAME}.elf
         -Wl,--whole-archive
         $<TARGET_FILE:threadx_port>
         -Wl,--no-whole-archive
+)
+
+target_link_options(${PROJECT_NAME}.elf  
+    PRIVATE
+        -Wl,-u,tx_application_define    
 )
 
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD

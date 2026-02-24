@@ -17,6 +17,12 @@
  *   STM32F103C8T6 (Blue Pill)  : PC13 — active LOW
  */
 
+
+/* ── Interfaces declaration ─────────────────────────────────────────────── */
+
+bool queue_is_valid(TX_QUEUE *q);
+
+
 /* ── LED ────────────────────────────────────────────────────────────────── */
 
 static TX_THREAD led_thread;
@@ -88,6 +94,10 @@ static ULONG lcd_queue_storage[LCD_QUEUE_STORAGE_SIZE];
 
 void LCD_Post(uint8_t row, uint8_t col, const char *text) {
 
+    if (!queue_is_valid(&lcd_queue)) {
+        return;
+    }
+
     LcdMessage_t msg;
     msg.row = row;
     msg.col = col;
@@ -144,6 +154,9 @@ static void lcd_thread_entry(ULONG initial_input)
 }
 
 
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
 /* ───────────────────────────────────────────────────────────────────────── */
 /* ── Kernel entry point ─────────────────────────────────────────────────── */
@@ -228,4 +241,17 @@ void tx_application_define(void *first_unused_memory)
         uSHELL_PRINTF("Failed to create SHELL thread\n");
         while (1) {} /* Handle error — typically halt or assert */
     }    
+}
+
+#ifdef __cplusplus
+}
+#endif
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/* ── Helpers ────────────────────────────────────────────────────────────── */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+bool queue_is_valid(TX_QUEUE *q)
+{
+    return tx_queue_info_get(q, NULL, NULL, NULL, NULL, NULL, NULL) == TX_SUCCESS;
 }

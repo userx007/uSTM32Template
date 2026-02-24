@@ -3,7 +3,7 @@ project(uart_access)
 
 
 add_library(${PROJECT_NAME}
-    OBJECT
+    STATIC
         src/uart_access.cpp
 )
 

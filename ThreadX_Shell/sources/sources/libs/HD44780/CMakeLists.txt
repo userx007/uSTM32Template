@@ -4,7 +4,7 @@ project(hd44780)
 
 
 add_library(${PROJECT_NAME}
-    OBJECT
+    STATIC
         src/hd44780_pcf8574.cpp
 )
 

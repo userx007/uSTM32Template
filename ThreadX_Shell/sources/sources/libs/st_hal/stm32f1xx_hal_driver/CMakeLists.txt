@@ -8,6 +8,7 @@ add_library(stm32f1xx_hal STATIC
     Src/stm32f1xx_hal_dma.c
     Src/stm32f1xx_hal_uart.c
     Src/stm32f1xx_hal_pwr.c
+    Src/stm32f1xx_hal_i2c.c    
 )
 
 target_include_directories(stm32f1xx_hal PUBLIC
