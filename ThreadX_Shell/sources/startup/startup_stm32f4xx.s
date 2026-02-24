@@ -39,6 +39,7 @@ __HeapLimit:
  * 2.  Vector Table
  *=========================================================================*/
   .section .isr_vector, "a", %progbits
+  .global g_pfnVectors
   .type   g_pfnVectors, %object
   .size   g_pfnVectors, .-g_pfnVectors
 

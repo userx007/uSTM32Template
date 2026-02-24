@@ -82,6 +82,8 @@ SECTIONS
         _ebss = .;
     } >RAM
 
+    PROVIDE(__RAM_segment_used_end__ = .);
+
     ._user_heap_stack :
     {
         . = ALIGN(8);
@@ -90,4 +92,6 @@ SECTIONS
         . = . + _Min_Stack_Size;
         . = ALIGN(8);
     } >RAM
+
+    PROVIDE(_end = .);
 }
