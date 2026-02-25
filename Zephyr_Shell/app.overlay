@@ -1,0 +1,19 @@
+/* Example: change the baud rate of the debug console */
+&usart1 {
+    current-speed = <115200>;
+};
+
+/* Example: remap the user LED to a different pin */
+/ {
+    leds {
+        compatible = "gpio-leds";
+        user_led: led_0 {
+            gpios = <&gpioc 13 GPIO_ACTIVE_LOW>;
+            label = "User LED";
+        };
+    };
+
+    aliases {
+        led0 = &user_led;
+    };
+};
