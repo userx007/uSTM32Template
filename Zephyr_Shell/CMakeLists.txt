@@ -12,5 +12,15 @@ add_subdirectory(libs)
 
 target_sources(app 
 	PRIVATE 
-		src/main.c
+		src/main.cpp
+)
+
+target_compile_options(app 
+	PRIVATE 
+		-fno-threadsafe-statics
+)
+
+target_compile_definitions(app 
+	PRIVATE 
+		MY_TERMINAL
 )
