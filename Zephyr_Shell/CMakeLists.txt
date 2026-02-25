@@ -13,6 +13,7 @@ add_subdirectory(libs)
 target_sources(app 
 	PRIVATE 
 		src/main.cpp
+		src/lcd_objects.c
 )
 
 target_compile_options(app 
