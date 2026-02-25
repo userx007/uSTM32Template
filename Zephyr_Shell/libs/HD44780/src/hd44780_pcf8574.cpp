@@ -10,7 +10,7 @@
  *   I2C_HandleTypeDef / HAL_I2C_*  →  struct device + i2c_write()
  *   HAL_I2C_MspInit (GPIO/clocks)  →  devicetree (automatic)
  *   tx_thread_sleep()              →  k_msleep()
- *   uSHELL_PRINTF / HAL guards     →  LOG_DBG / LOG_ERR  (Zephyr logging)
+ *   uSHELL_PRINTF / HAL guards     →  printk / printk  (Zephyr logging)
  */
 
 #include "hd44780_pcf8574.h"
@@ -78,9 +78,9 @@ bool HD44780_PCF8574::i2c_write_byte(uint8_t data)
 void HD44780_PCF8574::lcd_pulse_enable(uint8_t data)
 {
     i2c_write_byte(data | LCD_EN);
-    lcd_delay_ms(1);
+    lcd_delay_ms(5);
     i2c_write_byte(data & ~LCD_EN);
-    lcd_delay_ms(1);
+    lcd_delay_ms(5);
 }
 
 /* ── Send one nibble ─────────────────────────────────────────────────────── */
@@ -115,21 +115,23 @@ bool HD44780_PCF8574::init(void)
      */
     _i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
 
+    printk("LCD: HD44780_PCF8574::init()\n");
+
     if (!device_is_ready(_i2c_dev)) {
-        LOG_ERR("LCD: I2C bus not ready");
+        printk("LCD: I2C bus not ready\n");
         _i2c_ok = false;
         return false;
     }
 
-    lcd_delay_ms(100);
+    lcd_delay_ms(10);
 
     /* Probe — send backlight byte and check ACK */
     if (!i2c_write_byte(_backlight)) {
-        LOG_ERR("LCD: probe FAIL (no ACK at 0x%02X)", _addr);
+        printk("LCD: probe FAIL (no ACK at 0x%02X)\n", _addr);
         return false;
     }
 
-    LOG_DBG("LCD: probe OK at 0x%02X", _addr);
+    printk("LCD: probe OK at 0x%02X\n", _addr);
     lcd_delay_ms(10);
 
     /* 3-step reset sequence (HD44780 datasheet §4.4) */
@@ -156,7 +158,7 @@ bool HD44780_PCF8574::init(void)
     command(HD_ENTRYMODESET | HD_ENTRY_LEFT | HD_ENTRY_SHIFTDEC);
     lcd_delay_ms(5);
 
-    LOG_DBG("LCD: init done");
+    printk("LCD: init done\n");
     return _i2c_ok;
 }
 
