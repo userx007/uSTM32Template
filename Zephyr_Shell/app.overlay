@@ -3,6 +3,11 @@
     current-speed = <115200>;
 };
 
+&i2c1 {
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_STANDARD>;  /* 100 kHz */
+};
+
 /* Example: remap the user LED to a different pin */
 / {
     leds {

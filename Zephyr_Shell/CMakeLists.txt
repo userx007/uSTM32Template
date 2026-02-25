@@ -8,6 +8,8 @@ find_package(Zephyr
 
 project(Zephyr_Shell)
 
+add_subdirectory(libs)
+
 target_sources(app 
 	PRIVATE 
 		src/main.c
