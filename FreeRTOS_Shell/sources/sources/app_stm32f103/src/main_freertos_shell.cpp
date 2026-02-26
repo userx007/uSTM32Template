@@ -11,7 +11,6 @@
 #include "LcdAO.hpp"
 #include "LedAO.hpp"
 #include "ButtonAO.hpp"
-//#include "GpioEvent.hpp"
 #include "ao_defs.hpp"
 
 
