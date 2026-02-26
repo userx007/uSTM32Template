@@ -1,6 +1,7 @@
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/nvic.h>
+#include <libopencm3/stm32/exti.h>
 #include <FreeRTOS.h>
 #include <task.h>
 
@@ -10,9 +11,7 @@
 #include "LcdAO.hpp"
 #include "LedAO.hpp"
 #include "ButtonAO.hpp"
-#include "GpioEvent.hpp"
-//#include "GpioConfig.hpp"
-//#include "LedConfig.hpp"
+//#include "GpioEvent.hpp"
 #include "ao_defs.hpp"
 
 
@@ -102,4 +101,11 @@ int main(void)
 
     while (1);
     return 0;
+}
+
+
+extern "C" void exti0_isr(void)    // libopencm3 ISR name
+{
+    exti_reset_request(EXTI0);
+    buttonAO.onISR();
 }

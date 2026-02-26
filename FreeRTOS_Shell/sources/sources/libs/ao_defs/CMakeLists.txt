@@ -14,6 +14,6 @@ target_include_directories(${PROJECT_NAME}
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-        ${LIBOPENCM3_LIB}
         ao_config
+        ushell_core_config
 )
