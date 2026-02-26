@@ -1,12 +1,17 @@
-#pragma once
+#ifndef U_LED_CONFIG_HPP
+#define U_LED_CONFIG_HPP
+
 #include "GpioPin.hpp"
+#include "GpioConfig.hpp"
 
 struct LedConfig {
     GpioPin pin;
-    bool    activeHigh;   // true = SET turns LED on, false = RESET turns it on
+    bool    activeHigh;
 };
 
 static const LedConfig LED_CONFIG_DEFAULTS = {
-    .pin        = { GPIOC, GPIO_PIN_13 },
-    .activeHigh = true
+    .pin        = GPIO_LED_1,
+    .activeHigh = false     // PC13 blue pill LED is active-low
 };
+
+#endif /* U_LED_CONFIG_HPP */

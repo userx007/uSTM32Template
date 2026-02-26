@@ -1,4 +1,6 @@
-#pragma once
+#ifndef U_LED_AO_HPP
+#define U_LED_AO_HPP
+
 #include "ActiveObject.hpp"
 #include "LedConfig.hpp"
 #include "AoConfig.hpp"
@@ -48,21 +50,12 @@ private:
     {
         switch (e.signal)
         {
-            // Raw events — react immediately if desired
-            case SIG_BUTTON_PRESSED:                            break;  // Ignore raw
-            case SIG_BUTTON_RELEASED:                           break;  // Ignore raw
-
-            // Cooked click events
-            case SIG_BUTTON_SINGLE_CLICK:   setLed(!m_state);  break;  // Toggle on single
-            case SIG_BUTTON_DOUBLE_CLICK:   setLed(false);     break;  // Off on double
-            case SIG_BUTTON_LONG_PRESS:     setLed(true);      break;  // On  on long
-
-            // Direct LED commands
-            case SIG_LED_ON:                setLed(true);      break;
-            case SIG_LED_OFF:               setLed(false);     break;
-            case SIG_LED_TOGGLE:            setLed(!m_state);  break;
-
-            default:                                           break;
+            case SIG_LED_ON:     setLed(true);       break;
+            case SIG_LED_OFF:    setLed(false);      break;
+            case SIG_LED_TOGGLE: setLed(!m_state);   break;
+            default:                                 break;
         }
     }
 };
+
+#endif /* U_LED_AO_HPP */

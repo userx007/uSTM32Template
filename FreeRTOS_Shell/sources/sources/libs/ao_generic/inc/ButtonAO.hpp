@@ -1,4 +1,6 @@
-#pragma once
+#ifndef U_BUTTON_AO_HPP
+#define U_BUTTON_AO_HPP
+
 #include "ActiveObject.hpp"
 #include "ButtonConfig.hpp"
 #include "AoConfig.hpp"
@@ -19,16 +21,13 @@ public:
              const AoConfig     &aoCfg = BUTTON_AO_DEFAULTS)
         : m_cfg(btnCfg)
         , m_aoCfg(aoCfg)
-        , m_subscriber(NULL)
         , m_state(ST_IDLE)
         , m_pressTimestamp(0)
         , m_releaseTimestamp(0)
     {}
 
-    void init(ActiveObject *subscriber)
+    void init()
     {
-        m_subscriber = subscriber;
-
         m_ao.init(m_aoCfg.name,
                   &ButtonAO::dispatch,
                   this,
@@ -37,6 +36,7 @@ public:
                   m_aoCfg.queueDepth);
     }
 
+    // Call this from the GPIO EXTI ISR
     void onISR()
     {
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -48,9 +48,8 @@ public:
 
 private:
     ActiveObject  m_ao;
-    ButtonConfig  m_cfg;
+    ButtonConfig  m_cfg;        // Owns the callback + pin identity
     AoConfig      m_aoCfg;
-    ActiveObject *m_subscriber;
 
     State         m_state;
     TickType_t    m_pressTimestamp;
@@ -63,16 +62,18 @@ private:
     }
 
     // ── Helpers ────────────────────────────────────────────────
-    bool isPressed()
+    bool isPressed() const
     {
         return m_cfg.activeLow ? m_cfg.pin.isLow()
                                : m_cfg.pin.isHigh();
     }
 
-    void post(Signal sig, uint32_t param = 0)
+    // Fire callback — passes button identity so handler knows which button
+    void notify(Signal sig, uint32_t param = 0) const
     {
-        const Event e = { sig, param };
-        m_subscriber->post(e);
+        if (m_cfg.callback != NULL) {
+            m_cfg.callback(sig, m_cfg.pin, param);
+        }
     }
 
     // ── State machine ──────────────────────────────────────────
@@ -80,7 +81,6 @@ private:
     {
         if (e.signal != SIG_RAW_EDGE) return;
 
-        // Debounce — read settled pin state inside the task
         vTaskDelay(m_cfg.debounceTicks);
         const bool pressed = isPressed();
 
@@ -92,60 +92,51 @@ private:
                 if (pressed) {
                     m_pressTimestamp = xTaskGetTickCount();
                     m_state = ST_PRESSED1;
-
-                    post(SIG_BUTTON_PRESSED);   // Immediate raw press event
+                    notify(SIG_BUTTON_PRESSED);
                 }
                 break;
             }
 
-            // ── Finger is down (first press) ───────────────────
+            // ── Finger down (first press) ──────────────────────
             case ST_PRESSED1:
             {
-                if (!pressed)   // Released
+                if (!pressed)
                 {
                     const TickType_t held = xTaskGetTickCount() - m_pressTimestamp;
 
-                    post(SIG_BUTTON_RELEASED, (uint32_t)held);  // Immediate raw release
+                    notify(SIG_BUTTON_RELEASED, (uint32_t)held);
 
                     if (held >= m_cfg.longPressTicks)
                     {
-                        // Long press — emit immediately, no double-click possible
-                        post(SIG_BUTTON_LONG_PRESS, (uint32_t)held);
+                        notify(SIG_BUTTON_LONG_PRESS, (uint32_t)held);
                         m_state = ST_IDLE;
                     }
                     else
                     {
-                        // Short release — start double-click watch window
                         m_releaseTimestamp = xTaskGetTickCount();
                         m_state = ST_WAIT_SECOND;
-                        waitForSecondClick();   // Blocking wait (see below)
+                        waitForSecondClick();
                     }
                 }
                 break;
             }
 
-            // ── Finger down again (second press) ───────────────
+            // ── Second press detected ──────────────────────────
             case ST_PRESSED2:
             {
                 if (!pressed) {
-                    // Second release — confirmed double click
-                    post(SIG_BUTTON_DOUBLE_CLICK);
+                    notify(SIG_BUTTON_DOUBLE_CLICK);
                     m_state = ST_IDLE;
                 }
                 break;
             }
 
-            // ST_WAIT_SECOND is handled in waitForSecondClick()
             default:
                 break;
         }
     }
 
-    // ── Double-click window ────────────────────────────────────
-    //
-    // Called after first release. Polls for a second press within
-    // doubleClickTicks. Runs inside the AO's own task — safe to block.
-    //
+    // ── Double-click window — blocking poll inside the AO task ─
     void waitForSecondClick()
     {
         const TickType_t deadline = m_releaseTimestamp + m_cfg.doubleClickTicks;
@@ -157,38 +148,25 @@ private:
 
             if (remaining == 0)
             {
-                // Window expired — was a single click
-                post(SIG_BUTTON_SINGLE_CLICK);
+                notify(SIG_BUTTON_SINGLE_CLICK);
                 m_state = ST_IDLE;
                 return;
             }
 
-            // Check for second press
-            vTaskDelay(pdMS_TO_TICKS(10));   // 10ms poll granularity
+            vTaskDelay(pdMS_TO_TICKS(10));
 
             if (isPressed())
             {
-                vTaskDelay(m_cfg.debounceTicks);    // Debounce second press
+                vTaskDelay(m_cfg.debounceTicks);
 
                 if (isPressed()) {
-                    post(SIG_BUTTON_PRESSED);       // Raw press for second click too
+                    notify(SIG_BUTTON_PRESSED);
                     m_state = ST_PRESSED2;
-                    return;   // Back to handleEvent() for second release
+                    return;
                 }
             }
         }
     }
 };
 
-
-/*
-onISR (press)           onISR (press)
-                    │                       │
-    ┌──────┐    ┌───▼──────┐  onISR(rel) ┌──▼──────────┐  onISR(rel)
-    │ IDLE ├───▶│ PRESSED1 ├────────────▶│WAIT_SECOND  ├────────────▶ DOUBLE_CLICK
-    └──────┘    └───┬──────┘             └──────┬──────┘
-                    │ onISR (rel)                │ timeout
-                    │ held >= longPress          │
-                    ▼                            ▼
-               LONG_PRESS                  SINGLE_CLICK
-*/
+#endif /* U_BUTTON_AO_HPP */
