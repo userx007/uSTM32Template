@@ -15,6 +15,7 @@ set(CMAKE_SYSTEM_PROCESSOR cortex-m3)
 #   if(STM32_FAMILY STREQUAL "F1")
 set(STM32_FAMILY "F1" CACHE STRING "STM32 family: F1 or F4")
 
+
 # Toolchain prefix
 set(TOOLCHAIN_PREFIX arm-none-eabi)
 
@@ -47,4 +48,5 @@ set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set(LIBOPENCM3_DIR ${CMAKE_SOURCE_DIR}/libopencm3 CACHE PATH "Path to libopencm3")
 set(LIBOPENCM3_LIB ${LIBOPENCM3_DIR}/lib/libopencm3_stm32f1.a CACHE FILEPATH "libopencm3 static library")
 
+add_compile_definitions(USE_LIBOPENCM3)
 

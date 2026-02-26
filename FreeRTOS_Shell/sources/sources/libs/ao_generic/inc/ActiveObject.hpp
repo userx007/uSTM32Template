@@ -1,5 +1,5 @@
 #pragma once
-#include "Event.hpp"
+#include "GpioEvent.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"

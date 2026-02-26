@@ -1,4 +1,5 @@
-add_subdirectory(ao_concrete)
 add_subdirectory(ao_generic)
+add_subdirectory(ao_config)
+add_subdirectory(ao_defs)
 add_subdirectory(uart_access)
 add_subdirectory(HD44780)

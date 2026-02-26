@@ -15,5 +15,8 @@ target_link_libraries(${PROJECT_NAME}
         ushell_core
         ushell_core_utils
         ushell_user_root
+        ao_generic
+        ao_config
+        ao_defs
 )
 

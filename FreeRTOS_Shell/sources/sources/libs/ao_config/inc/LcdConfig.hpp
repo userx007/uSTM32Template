@@ -9,10 +9,4 @@ struct LcdConfig {
     uint8_t rows;           // Display height (e.g. 2)
 };
 
-static const LcdConfig LCD_CONFIG_DEFAULTS = {
-    .i2cAddress = 0x27,
-    .cols       = 16,
-    .rows       = 2
-};
-
 #endif /* U_LCD_CONFIG_HPP */
