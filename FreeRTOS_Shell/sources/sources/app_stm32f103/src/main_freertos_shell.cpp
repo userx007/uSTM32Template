@@ -32,7 +32,7 @@ static void setup_gpio(void) {
     rcc_periph_clock_enable(RCC_GPIOC);
 
     /*
-     * STM32F103 uses the older libopencm3 GPIO API (no gpio_mode_setup).
+     * STM32F103 uses the older libopencm3 GPIO API
      * gpio_set_mode() combines mode + CNF in a single call.
      * PC13 is the built-in LED on most Blue Pill / Maple Mini boards.
      */
