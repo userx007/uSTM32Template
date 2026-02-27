@@ -63,21 +63,21 @@ static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param)
         {
             //const Event ev = { SIG_LED_TOGGLE, 0 };
             //ledAO.getAO()->post(ev);  
-            uSHELL_PRINTF("0: SINGLE_CLICK");
+            uSHELL_PRINTF("0: SINGLE_CLICK\n");
             break;
         }
         case SIG_BUTTON_DOUBLE_CLICK:
         {
             //const Event ev = { SIG_LED_OFF, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("0: DOUBLE_CLICK");
+            uSHELL_PRINTF("0: DOUBLE_CLICK\n");
             break;
         }
         case SIG_BUTTON_LONG_PRESS:
         {
             // const Event ev = { SIG_LED_ON, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("0: LONG_PRESS");
+            uSHELL_PRINTF("0: LONG_PRESS\n");
             break;
         }
         default:
@@ -98,21 +98,21 @@ static void onButtonEvent_1(Signal sig, const GpioPin &btn, uint32_t param)
         {
             //const Event ev = { SIG_LED_TOGGLE, 0 };
             //ledAO.getAO()->post(ev);  
-            uSHELL_PRINTF("1: SINGLE_CLICK");
+            uSHELL_PRINTF("1: SINGLE_CLICK\n");
             break;
         }
         case SIG_BUTTON_DOUBLE_CLICK:
         {
             //const Event ev = { SIG_LED_OFF, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("1: DOUBLE_CLICK");
+            uSHELL_PRINTF("1: DOUBLE_CLICK\n");
             break;
         }
         case SIG_BUTTON_LONG_PRESS:
         {
             // const Event ev = { SIG_LED_ON, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("1: LONG_PRESS");
+            uSHELL_PRINTF("1: LONG_PRESS\n");
             break;
         }
         default:

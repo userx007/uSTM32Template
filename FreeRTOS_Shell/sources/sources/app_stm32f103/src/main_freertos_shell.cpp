@@ -13,14 +13,10 @@
 #include "ButtonAO.hpp"
 #include "ao_defs.hpp"
 
-#define USE_AO 1
+#define USE_AO_BUTTONS 1
 
 
-#if (1 == USE_AO)
 // ── Active Object instances ────────────────────────────────────
-static ButtonAO buttonAO_0(BUTTON_0);
-static ButtonAO buttonAO_1(BUTTON_1);
-#endif /*(1 == USE_AO)*/
 
 static LedAO    ledAO(LED_0);
 static LcdAO    lcdAO(LCD_0);
@@ -61,7 +57,6 @@ static void vTaskShell(void *pvParameters)
 }
 
 // ── FreeRTOS hooks ─────────────────────────────────────────────
-void vApplicationMallocFailedHook(void)  { while (1); }
 void vApplicationIdleHook(void)          { __asm volatile("wfi"); }
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
@@ -69,6 +64,16 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     (void)xTask;
     (void)pcTaskName;
     while (1);
+}
+
+// main_freertos_shell.cpp — add a visible failure indicator
+void vApplicationMallocFailedHook(void)
+{
+    // Toggle PC13 rapidly so you can see it in PICSimLab
+    while(1) {
+        gpio_toggle(GPIOC, GPIO13);
+        for(volatile int i = 0; i < 1000000; i++);
+    }
 }
 
 // ── Hardware init ──────────────────────────────────────────────
@@ -79,7 +84,9 @@ static void setup_clock(void)
 
 static void setup_gpio(void)
 {
+    rcc_periph_clock_enable(RCC_GPIOB);  // ← belt-and-suspenders for buttons
     rcc_periph_clock_enable(RCC_GPIOC);
+    rcc_periph_clock_enable(RCC_AFIO);   // ← needed for EXTI remapping
 
     // PC13 — onboard LED (active-low, driven by LedAO)
     gpio_set_mode(GPIOC, GPIO_MODE_OUTPUT_2_MHZ,
@@ -93,20 +100,24 @@ int main(void)
     setup_gpio();
     uart_setup();
 
-#if (1 == USE_AO)
+#if (1 == USE_AO_BUTTONS)
+    static ButtonAO buttonAO_0(BUTTON_0);
+    static ButtonAO buttonAO_1(BUTTON_1);
+
     // Init AOs — creates their internal queues and tasks
     buttonAO_0.init();
     buttonAO_1.init();
-#endif /*(1 == USE_AO)*/
+#endif /*(1 == USE_AO_BUTTONS)*/
 
     ledAO.init();
     lcdAO.init();
 
     xTaskCreate(vTaskBlink, "Blink", 128,  NULL, 2, NULL);
-    xTaskCreate(vTaskShell, "Shell", 1024, NULL, 1, NULL);
+    xTaskCreate(vTaskShell, "Shell", 512, NULL, 1, NULL);
 
     vTaskStartScheduler();
 
     while (1);
     return 0;
 }
+

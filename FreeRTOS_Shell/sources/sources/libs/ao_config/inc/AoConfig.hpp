@@ -12,7 +12,7 @@ struct AoConfig {
 };
 
 // Sensible defaults — override per instance as needed
-static const AoConfig BUTTON_AO_DEFAULTS = { "ButtonAO", 3, 256, 8  };
-static const AoConfig LED_AO_DEFAULTS    = { "LedAO",    2, 128, 8  };
+static constexpr AoConfig BUTTON_AO_DEFAULTS = { "ButtonAO", 3, 96, 8  };
+static constexpr AoConfig LED_AO_DEFAULTS    = { "LedAO",    2, 128, 8  };
 
 #endif /*U_AO_CONFIG_HPP*/
