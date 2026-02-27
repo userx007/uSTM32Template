@@ -18,13 +18,12 @@
 
 #if (1 == USE_AO)
 // ── Active Object instances ────────────────────────────────────
-static LedAO    ledAO(LED_0);
 static ButtonAO buttonAO(BUTTON_0);
 #endif /*(1 == USE_AO)*/
 
+static LedAO    ledAO(LED_0);
 static LcdAO    lcdAO(LCD_0);
 
-#if (1 == USE_AO)
 // ── Blink task ─────────────────────────────────────────────────
 //
 // No longer touches GPIO directly — posts to LedAO and LcdAO.
@@ -51,7 +50,6 @@ static void vTaskBlink(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
-#endif /*(1 == USE_AO)*/
 
 
 // ── Shell task ─────────────────────────────────────────────────
@@ -96,16 +94,13 @@ int main(void)
 
 #if (1 == USE_AO)
     // Init AOs — creates their internal queues and tasks
-    ledAO.init();
     buttonAO.init();
 #endif /*(1 == USE_AO)*/
 
+    ledAO.init();
     lcdAO.init();
 
-
-#if (1 == USE_AO)
     xTaskCreate(vTaskBlink, "Blink", 128,  NULL, 2, NULL);
-#endif /*(1 == USE_AO)*/
     xTaskCreate(vTaskShell, "Shell", 1024, NULL, 1, NULL);
 
     vTaskStartScheduler();
