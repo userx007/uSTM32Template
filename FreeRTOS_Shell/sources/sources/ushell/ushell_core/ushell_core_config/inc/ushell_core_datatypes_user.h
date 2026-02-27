@@ -25,7 +25,7 @@
 #undef   uSHELL_COMMAND
 #undef   uSHELL_COMMAND_PARAMS_PATTERN
 #define  uSHELL_COMMAND_PARAMS_PATTERN(t)
-#define  uSHELL_COMMAND(a,b,c)                      extern int a(b##_params);
+#define  uSHELL_COMMAND(a,b,c)                      extern "C" int a(b##_params);
 #include uSHELL_COMMANDS_CONFIG_FILE                /* functions's prototypes */
 #undef   uSHELL_COMMANDS_TABLE_BEGIN
 #undef   uSHELL_COMMAND_PARAMS_PATTERN

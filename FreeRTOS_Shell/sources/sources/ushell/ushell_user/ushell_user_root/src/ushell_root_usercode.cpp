@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
 /*
 Note:
     The definitios of num8_t, num16_t num32_t, num64_t are declared in:
@@ -138,6 +142,10 @@ int liotest(uint64_t l, uint32_t i, bool o) {
     return 0;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 ///////////////////////////////////////////////////////////////////
 //               USER SHORTCUTS HANDLERS                         //
 ///////////////////////////////////////////////////////////////////
@@ -156,3 +164,4 @@ void uShellUserHandleShortcut_Slash(const char *pstrArgs) {
 } /* uShellUserHandleShortcut_Slash() */
 
 #endif /*(1 == uSHELL_IMPLEMENTS_USER_SHORTCUTS)*/
+
