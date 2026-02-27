@@ -143,6 +143,9 @@ int uart_printf(const char *fmt, ...)
                     }
                     break;
                 }
+                case 'u':
+                    print_int(va_arg(args, unsigned int), width, pad, left_align);
+                    break;
                 case 'd':
                     print_int(va_arg(args, int), width, pad, left_align);
                     break;
@@ -232,6 +235,9 @@ int uart_snprintf(char *buf, int maxlen, const char *fmt, ...)
                     }
                     break;
                 }
+                case 'u':
+                    print_int_to_buf(buf, &pos, maxlen, va_arg(args, unsigned int), width, pad, left_align);
+                    break;
                 case 'd':
                     print_int_to_buf(buf, &pos, maxlen, va_arg(args, int), width, pad, left_align);
                     break;

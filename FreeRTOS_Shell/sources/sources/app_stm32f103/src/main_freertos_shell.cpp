@@ -13,8 +13,6 @@
 #include "ButtonAO.hpp"
 #include "ao_defs.hpp"
 
-#define USE_AO_BUTTONS 1
-
 
 // ── Active Object instances ────────────────────────────────────
 
@@ -57,7 +55,11 @@ static void vTaskShell(void *pvParameters)
 }
 
 // ── FreeRTOS hooks ─────────────────────────────────────────────
-void vApplicationIdleHook(void)          { __asm volatile("wfi"); }
+void vApplicationIdleHook(void)          
+{ 
+    __asm volatile("wfi"); 
+}
+
 
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
@@ -66,27 +68,13 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
     while (1);
 }
 
-// main_freertos_shell.cpp — add a visible failure indicator
 void vApplicationMallocFailedHook(void)
 {
-    // Toggle PC13 rapidly so you can see it in PICSimLab
     while(1) {
         gpio_toggle(GPIOC, GPIO13);
-        for(volatile int i = 0; i < 5000000; i++);
-    }
-}
-
-/* printStackWatermarks */
-void psw (void)
-{
-    TaskStatus_t tasks[8];
-    UBaseType_t  count = uxTaskGetSystemState(tasks, 8, NULL);
-
-    uSHELL_PRINTF("Task watermarks:\r\n");
-    for (UBaseType_t i = 0; i < count; i++) {
-        uSHELL_PRINTF("  %-16s %d words free\r\n",
-            tasks[i].pcTaskName,
-            tasks[i].usStackHighWaterMark);
+        for(int i = 0; i < 5000000; i++) {
+            __asm volatile("nop");   // ← prevents optimizer from removing the loop
+        }
     }
 }
 
@@ -114,15 +102,11 @@ int main(void)
     setup_gpio();
     uart_setup();
 
-#if (1 == USE_AO_BUTTONS)
     static ButtonAO buttonAO_0(BUTTON_0);
     static ButtonAO buttonAO_1(BUTTON_1);
 
-    // Init AOs — creates their internal queues and tasks
     buttonAO_0.init();
     buttonAO_1.init();
-#endif /*(1 == USE_AO_BUTTONS)*/
-
     ledAO.init();
     lcdAO.init();
 

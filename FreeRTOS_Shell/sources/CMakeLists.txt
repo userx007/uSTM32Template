@@ -91,6 +91,7 @@ target_link_libraries(${PROJECT_NAME}.elf
         uart_access
         hd44780
         freertos
+        sys_info
         ${LIBOPENCM3_LIB}
     -Wl,--end-group
 )
