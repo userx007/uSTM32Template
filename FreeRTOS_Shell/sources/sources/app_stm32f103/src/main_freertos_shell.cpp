@@ -13,13 +13,18 @@
 #include "ButtonAO.hpp"
 #include "ao_defs.hpp"
 
+#define USE_AO 0
 
+
+#if (1 == USE_AO)
 // ── Active Object instances ────────────────────────────────────
-static LcdAO    lcdAO(LCD_0);
 static LedAO    ledAO(LED_0);
 static ButtonAO buttonAO(BUTTON_0);
+#endif /*(1 == USE_AO)*/
 
+static LcdAO    lcdAO(LCD_0);
 
+#if (1 == USE_AO)
 // ── Blink task ─────────────────────────────────────────────────
 //
 // No longer touches GPIO directly — posts to LedAO and LcdAO.
@@ -46,6 +51,8 @@ static void vTaskBlink(void *pvParameters)
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 }
+#endif /*(1 == USE_AO)*/
+
 
 // ── Shell task ─────────────────────────────────────────────────
 static void vTaskShell(void *pvParameters)
@@ -87,13 +94,18 @@ int main(void)
     setup_gpio();
     uart_setup();
 
+#if (1 == USE_AO)
     // Init AOs — creates their internal queues and tasks
-    lcdAO.init();
     ledAO.init();
     buttonAO.init();
+#endif /*(1 == USE_AO)*/
 
-    // Plain tasks that orchestrate the AOs
+    lcdAO.init();
+
+
+#if (1 == USE_AO)
     xTaskCreate(vTaskBlink, "Blink", 128,  NULL, 2, NULL);
+#endif /*(1 == USE_AO)*/
     xTaskCreate(vTaskShell, "Shell", 1024, NULL, 1, NULL);
 
     vTaskStartScheduler();
@@ -102,9 +114,10 @@ int main(void)
     return 0;
 }
 
-
+#if (1 == USE_AO)
 extern "C" void exti0_isr(void)    // libopencm3 ISR name
 {
     exti_reset_request(EXTI0);
     buttonAO.onISR();
 }
+#endif /*(1 == USE_AO)*/

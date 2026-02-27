@@ -1,4 +1,6 @@
-#pragma once
+#ifndef U_ACTIVE_OBJECT_HPP
+#define U_ACTIVE_OBJECT_HPP
+
 #include "GpioEvent.hpp"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -60,3 +62,5 @@ private:
         }
     }
 };
+
+#endif /*U_ACTIVE_OBJECT_HPP*/

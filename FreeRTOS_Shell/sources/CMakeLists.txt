@@ -78,17 +78,19 @@ add_dependencies(${PROJECT_NAME}.elf libopencm3_build)
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME}.elf
-    user_main
-    ushell_core
-    ushell_core_utils
-    ushell_user_root
-    ao_generic
-    ao_config
-    ao_defs
-    uart_access
-    hd44780
-    freertos
-    ${LIBOPENCM3_LIB}
+    -Wl,--start-group
+        user_main
+        ushell_core
+        ushell_core_utils
+        ushell_user_root
+        ao_generic
+        ao_config
+        ao_defs
+        uart_access
+        hd44780
+        freertos
+        ${LIBOPENCM3_LIB}
+    -Wl,--end-group
 )
 
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD

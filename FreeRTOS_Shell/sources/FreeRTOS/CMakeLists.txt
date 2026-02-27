@@ -82,13 +82,6 @@ target_compile_options(freertos PRIVATE
     $<$<CONFIG:RELEASE>:-O2>
 )
 
-# ============== LTO SUPPORT ==============
-# Disable LTO for FreeRTOS to avoid linker issues with mixed LTO/non-LTO objects
-# If you want to enable LTO, make sure your main project also has it enabled consistently
-set_target_properties(freertos PROPERTIES
-    INTERPROCEDURAL_OPTIMIZATION FALSE
-)
-
 # ============== DEFINITIONS ==============
 # Add any FreeRTOS-specific definitions here if needed
 # target_compile_definitions(freertos PRIVATE ...)
