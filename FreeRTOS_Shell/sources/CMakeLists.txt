@@ -86,6 +86,8 @@ target_link_libraries(${PROJECT_NAME}.elf
         ao_generic
         ao_config
         ao_defs
+        button_registry
+        isr_handlers      
         uart_access
         hd44780
         freertos

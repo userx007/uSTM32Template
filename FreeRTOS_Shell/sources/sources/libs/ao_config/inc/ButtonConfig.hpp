@@ -2,16 +2,18 @@
 #define U_BUTTON_CONFIG_HPP
 
 #include "GpioPin.hpp"
-#include "GpioEvent.hpp"        // ButtonCallbackFn
+#include "ExtiConfig.hpp"
+#include "GpioEvent.hpp"        
 #include "FreeRTOS.h"
 
 struct ButtonConfig {
     GpioPin           pin;
+    ExtiConfig        exti;    
     TickType_t        debounceTicks;
     TickType_t        longPressTicks;
     TickType_t        doubleClickTicks;
     bool              activeLow;
-    ButtonCallbackFn  callback;         // Called on every cooked event
+    ButtonCallbackFn  callback;         
 };
 
 #endif /* U_BUTTON_CONFIG_HPP */

@@ -28,6 +28,27 @@ public:
 
     void init()
     {
+        // ── GPIO hardware init ─────────────────────────────────────
+        rcc_periph_clock_enable(rcc_for_port(m_cfg.pin.port)); // see note
+        rcc_periph_clock_enable(RCC_AFIO);
+
+        gpio_set_mode(m_cfg.pin.port,
+                      GPIO_MODE_INPUT,
+                      GPIO_CNF_INPUT_PULL_UPDOWN,
+                      m_cfg.pin.pin);
+        gpio_set(m_cfg.pin.port, m_cfg.pin.pin);  // internal pull-up
+
+        // ── EXTI init ──────────────────────────────────────────────
+        exti_select_source(m_cfg.exti.extiLine, m_cfg.pin.port);
+        exti_set_trigger(m_cfg.exti.extiLine, m_cfg.exti.trigger);
+        exti_enable_request(m_cfg.exti.extiLine);
+
+        nvic_enable_irq(m_cfg.exti.nvicIrq);
+        nvic_set_priority(m_cfg.exti.nvicIrq, m_cfg.exti.nvicPrio);
+
+        // ── Register with ISR dispatcher ───────────────────────────
+        ButtonRegistry::registerButton(m_cfg.exti.lineNumber, this);
+
         m_ao.init(m_aoCfg.name,
                   &ButtonAO::dispatch,
                   this,
@@ -167,6 +188,14 @@ private:
             }
         }
     }
+
+    static inline rcc_periph_clken rcc_for_port(uint32_t port) {
+        if (port == GPIOA) return RCC_GPIOA;
+        if (port == GPIOB) return RCC_GPIOB;
+        if (port == GPIOC) return RCC_GPIOC;
+        return RCC_GPIOD;
+    }    
+    
 };
 
 #endif /* U_BUTTON_AO_HPP */

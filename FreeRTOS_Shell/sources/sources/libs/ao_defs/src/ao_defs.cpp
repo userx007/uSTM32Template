@@ -7,11 +7,22 @@ static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param);
 
 const ButtonConfig BUTTON_0 = {
     .pin              = GPIO_BUTTON_0,
+    .exti             = EXTI_BUTTON_0,
     .debounceTicks    = pdMS_TO_TICKS(20),
     .longPressTicks   = pdMS_TO_TICKS(1000),
     .doubleClickTicks = pdMS_TO_TICKS(300),
     .activeLow        = true,
-    .callback         = onButtonEvent_0            
+    .callback         = onButtonEvent_0
+};
+
+const ButtonConfig BUTTON_1 = {
+    .pin              = GPIO_BUTTON_1,
+    .exti             = EXTI_BUTTON_1,      
+    .debounceTicks    = pdMS_TO_TICKS(20),
+    .longPressTicks   = pdMS_TO_TICKS(1000),
+    .doubleClickTicks = pdMS_TO_TICKS(300),
+    .activeLow        = true,
+    .callback         = onButtonEvent_1
 };
 
 
