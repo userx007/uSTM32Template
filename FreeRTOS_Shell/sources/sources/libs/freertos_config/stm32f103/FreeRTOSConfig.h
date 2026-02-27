@@ -73,6 +73,9 @@
 #define INCLUDE_xTaskAbortDelay                 1
 #define INCLUDE_xTaskGetHandle                  1
 
+#define configUSE_TRACE_FACILITY                1
+#define configGENERATE_RUN_TIME_STATS           0
+
 /* Cortex-M specific handlers */
 #define vPortSVCHandler     sv_call_handler
 #define xPortPendSVHandler  pend_sv_handler

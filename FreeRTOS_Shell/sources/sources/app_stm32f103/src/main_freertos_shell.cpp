@@ -72,7 +72,21 @@ void vApplicationMallocFailedHook(void)
     // Toggle PC13 rapidly so you can see it in PICSimLab
     while(1) {
         gpio_toggle(GPIOC, GPIO13);
-        for(volatile int i = 0; i < 1000000; i++);
+        for(volatile int i = 0; i < 5000000; i++);
+    }
+}
+
+/* printStackWatermarks */
+void psw (void)
+{
+    TaskStatus_t tasks[8];
+    UBaseType_t  count = uxTaskGetSystemState(tasks, 8, NULL);
+
+    uSHELL_PRINTF("Task watermarks:\r\n");
+    for (UBaseType_t i = 0; i < count; i++) {
+        uSHELL_PRINTF("  %-16s %d words free\r\n",
+            tasks[i].pcTaskName,
+            tasks[i].usStackHighWaterMark);
     }
 }
 
