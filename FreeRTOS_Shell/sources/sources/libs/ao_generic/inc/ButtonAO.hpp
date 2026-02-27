@@ -2,8 +2,26 @@
 #define U_BUTTON_AO_HPP
 
 #include "ActiveObject.hpp"
-#include "ButtonConfig.hpp"
 #include "AoConfig.hpp"
+#include "ButtonConfig.hpp"
+#include "ButtonRegistry.hpp"
+
+#if defined(USE_LIBOPENCM3)
+extern "C" {
+    #include <libopencm3/stm32/rcc.h>    // ← rcc_periph_clock_enable, rcc_periph_clken
+    #include <libopencm3/stm32/gpio.h>   // ← gpio_set_mode, gpio_set
+    #include <libopencm3/stm32/exti.h>   // ← exti_select_source, exti_set_trigger
+    #include <libopencm3/cm3/nvic.h>     // ← nvic_enable_irq, nvic_set_priority
+}
+
+
+static inline rcc_periph_clken rcc_for_port(uint32_t port) {
+    if (port == GPIOA) return RCC_GPIOA;
+    if (port == GPIOB) return RCC_GPIOB;
+    if (port == GPIOC) return RCC_GPIOC;
+    return RCC_GPIOD;
+}    
+#endif 
 
 class ButtonAO {
 public:
@@ -188,14 +206,6 @@ private:
             }
         }
     }
-
-    static inline rcc_periph_clken rcc_for_port(uint32_t port) {
-        if (port == GPIOA) return RCC_GPIOA;
-        if (port == GPIOB) return RCC_GPIOB;
-        if (port == GPIOC) return RCC_GPIOC;
-        return RCC_GPIOD;
-    }    
-    
 };
 
 #endif /* U_BUTTON_AO_HPP */

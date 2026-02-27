@@ -12,3 +12,9 @@ target_include_directories(${PROJECT_NAME}
         ${PROJECT_SOURCE_DIR}/inc
 )
 
+target_link_libraries(${PROJECT_NAME}
+    INTERFACE
+        button_registry
+        freertos
+)
+

@@ -2,8 +2,13 @@
 #include "ushell_core_printout.h"
 
 
-static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param);
+// -- buttons callbacks forward declaration -----------------------------------
 
+static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param);
+static void onButtonEvent_1(Signal sig, const GpioPin &btn, uint32_t param);
+
+
+// -- buttons configuration ---------------------------------------------------
 
 const ButtonConfig BUTTON_0 = {
     .pin              = GPIO_BUTTON_0,
@@ -26,6 +31,8 @@ const ButtonConfig BUTTON_1 = {
 };
 
 
+// -- LCD configuration -------------------------------------------------------
+
 const LcdConfig LCD_0 = {
     .i2cAddress = 0x27,
     .cols       = 16,
@@ -33,25 +40,22 @@ const LcdConfig LCD_0 = {
 };
 
 
+// -- LED configuration -------------------------------------------------------
+
 const LedConfig LED_0 = {
     .pin        = GPIO_LED_0,
     .activeHigh = false     // PC13 blue pill LED is active-low
 };
 
 
-//--------------
+// -- buttons callbacks implementation ----------------------------------------
 
-// ── Callback — translates button events into LED commands ──────
-//
-// This is the ONLY place that knows about the button→LED mapping.
-// ledAO knows nothing about buttons; buttonAO knows nothing about LEDs.
-//
 static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param)
 {
     (void)btn;      // Ignored here — use it to multiplex if >1 button
     (void)param;    // Available for long-press duration etc.
 
-//    const Event e = { SIG_LED_TOGGLE, 0 };   // default
+//  const Event e = { SIG_LED_TOGGLE, 0 };   // default
 
     switch (sig)
     {
@@ -59,21 +63,56 @@ static void onButtonEvent_0(Signal sig, const GpioPin &btn, uint32_t param)
         {
             //const Event ev = { SIG_LED_TOGGLE, 0 };
             //ledAO.getAO()->post(ev);  
-            uSHELL_PRINTF("SINGLE_CLICK");
+            uSHELL_PRINTF("0: SINGLE_CLICK");
             break;
         }
         case SIG_BUTTON_DOUBLE_CLICK:
         {
             //const Event ev = { SIG_LED_OFF, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("DOUBLE_CLICK");
+            uSHELL_PRINTF("0: DOUBLE_CLICK");
             break;
         }
         case SIG_BUTTON_LONG_PRESS:
         {
             // const Event ev = { SIG_LED_ON, 0 };
             //ledAO.getAO()->post(ev);
-            uSHELL_PRINTF("LONG_PRESS");
+            uSHELL_PRINTF("0: LONG_PRESS");
+            break;
+        }
+        default:
+            break;      // PRESSED / RELEASED ignored here
+    }
+}
+
+static void onButtonEvent_1(Signal sig, const GpioPin &btn, uint32_t param)
+{
+    (void)btn;      // Ignored here — use it to multiplex if >1 button
+    (void)param;    // Available for long-press duration etc.
+
+//  const Event e = { SIG_LED_TOGGLE, 0 };   // default
+
+    switch (sig)
+    {
+        case SIG_BUTTON_SINGLE_CLICK:
+        {
+            //const Event ev = { SIG_LED_TOGGLE, 0 };
+            //ledAO.getAO()->post(ev);  
+            uSHELL_PRINTF("1: SINGLE_CLICK");
+            break;
+        }
+        case SIG_BUTTON_DOUBLE_CLICK:
+        {
+            //const Event ev = { SIG_LED_OFF, 0 };
+            //ledAO.getAO()->post(ev);
+            uSHELL_PRINTF("1: DOUBLE_CLICK");
+            break;
+        }
+        case SIG_BUTTON_LONG_PRESS:
+        {
+            // const Event ev = { SIG_LED_ON, 0 };
+            //ledAO.getAO()->post(ev);
+            uSHELL_PRINTF("1: LONG_PRESS");
             break;
         }
         default:

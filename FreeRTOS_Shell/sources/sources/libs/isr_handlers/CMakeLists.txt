@@ -16,5 +16,6 @@ target_link_libraries(${PROJECT_NAME}
     PUBLIC
         ${LIBOPENCM3_LIB}
         ao_generic
+        ao_config
         button_registry
 )

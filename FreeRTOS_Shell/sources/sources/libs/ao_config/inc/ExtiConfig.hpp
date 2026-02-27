@@ -8,11 +8,11 @@
 #include <libopencm3/cm3/nvic.h>
 
 struct ExtiConfig {
-    uint32_t extiLine;   // EXTI12, EXTI0, etc.
-    uint32_t trigger;    // EXTI_TRIGGER_FALLING / BOTH
-    uint8_t  nvicIrq;    // NVIC_EXTI15_10_IRQ, etc.
-    uint8_t  nvicPrio;
-    uint8_t  lineNumber; // numeric 0-15, used by registry
+    uint32_t            extiLine;   // EXTI12, EXTI0, etc.
+    exti_trigger_type   trigger;    // EXTI_TRIGGER_FALLING / BOTH
+    uint8_t             nvicIrq;    // NVIC_EXTI15_10_IRQ, etc.
+    uint8_t             nvicPrio;
+    uint8_t             lineNumber; // numeric 0-15, used by registry
 };
 
 // Helpers for readability in GpioConfig.hpp
