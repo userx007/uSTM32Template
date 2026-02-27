@@ -13,12 +13,13 @@
 #include "ButtonAO.hpp"
 #include "ao_defs.hpp"
 
-#define USE_AO 0
+#define USE_AO 1
 
 
 #if (1 == USE_AO)
 // ── Active Object instances ────────────────────────────────────
-static ButtonAO buttonAO(BUTTON_0);
+static ButtonAO buttonAO_0(BUTTON_0);
+static ButtonAO buttonAO_1(BUTTON_1);
 #endif /*(1 == USE_AO)*/
 
 static LedAO    ledAO(LED_0);
@@ -94,7 +95,8 @@ int main(void)
 
 #if (1 == USE_AO)
     // Init AOs — creates their internal queues and tasks
-    buttonAO.init();
+    buttonAO_0.init();
+    buttonAO_1.init();
 #endif /*(1 == USE_AO)*/
 
     ledAO.init();
@@ -108,11 +110,3 @@ int main(void)
     while (1);
     return 0;
 }
-
-#if (1 == USE_AO)
-extern "C" void exti0_isr(void)    // libopencm3 ISR name
-{
-    exti_reset_request(EXTI0);
-    buttonAO.onISR();
-}
-#endif /*(1 == USE_AO)*/

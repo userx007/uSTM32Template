@@ -15,7 +15,7 @@
 
 
     // ── Buttons: EXTI ─────────────────────────────────────────────
-    //                                      line  nvic_irq          prio
+    //                                      line     nvic_irq       prio
     #define EXTI_BUTTON_0   EXTI_CFG_FALLING(12, NVIC_EXTI15_10_IRQ, 5)
     #define EXTI_BUTTON_1   EXTI_CFG_FALLING(13, NVIC_EXTI15_10_IRQ, 5)
 
